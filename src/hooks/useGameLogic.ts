@@ -108,7 +108,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const startLog = '新的一局开始，正在分配身份。'
       const startEvent: ReplayEvent = {
         id: `start-${timestamp}`,
-        phase: 'Night',
+        phase: 'RoleAssignment',
         category: 'system',
         day: 0,
         content: startLog,
@@ -119,7 +119,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         players,
         day: 0,
-        phase: 'Night',
+        phase: 'RoleAssignment',
         gameLog: [startLog],
         winner: 'none',
         werewolfChoice: null,
