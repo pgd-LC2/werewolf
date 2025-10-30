@@ -93,9 +93,9 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
   }
 
   const handleStartGame = () => {
-    prepareNewGame()
-    resume()
     setAutoRunning(false)
+    pause()
+    window.location.reload()
   }
 
   const handleOneClickStart = () => {
