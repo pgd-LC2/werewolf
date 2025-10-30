@@ -1,8 +1,8 @@
-import apiKeyRaw from "../../openrouterkey.txt?raw"
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+const AI_REQUEST_URL = `${SUPABASE_URL}/functions/v1/ai-request`
 
-const OPENROUTER_API_KEY = (apiKeyRaw ?? "").trim()
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-export const IS_OPENROUTER_CONFIGURED = OPENROUTER_API_KEY.length > 0
+export const IS_OPENROUTER_CONFIGURED = true
 
 export type ChatCompletionRole = "system" | "user" | "assistant" | "tool"
 
@@ -54,35 +54,6 @@ export interface AiResponse {
   thinking?: string
 }
 
-const RESPONSE_SCHEMA = {
-  name: "ai_action_schema",
-  schema: {
-    type: "object",
-    properties: {
-      speech: { type: "string" },
-      plan: { type: "string" },
-      confidence: {
-        type: "number",
-        minimum: 0,
-        maximum: 1
-      },
-      action: {
-        type: "object",
-        properties: {
-          type: { type: "string" },
-          targetId: { type: ["integer", "null"] },
-          notes: { type: "string" }
-        },
-        required: ["type"],
-        additionalProperties: false
-      }
-    },
-    required: ["speech", "plan", "confidence"],
-    additionalProperties: false
-  },
-  strict: true
-} as const
-
 export async function requestAiAction({
   model,
   messages,
@@ -92,56 +63,29 @@ export async function requestAiAction({
   messages: ChatCompletionMessageParam[]
   temperature?: number
 }): Promise<AiResponse> {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OpenRouter API key is missing. Please ensure openrouterkey.txt contains a valid key.')
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Supabase configuration is missing.')
   }
 
-  const response = await fetch(OPENROUTER_API_URL, {
+  const response = await fetch(AI_REQUEST_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      "X-OpenRouter-Enable-Reasoning": "true",
-      "X-OpenRouter-Response-Thoughts": "true"
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "apikey": SUPABASE_ANON_KEY
     },
     body: JSON.stringify({
       model,
       temperature,
-      messages,
-      response_format: {
-        type: "json_schema",
-        json_schema: RESPONSE_SCHEMA
-      }
+      messages
     })
   })
 
   if (!response.ok) {
     const errorText = await response.text()
-    throw new Error(`OpenRouter request failed: ${response.status} ${response.statusText} - ${errorText}`)
+    throw new Error(`AI request failed: ${response.status} ${response.statusText} - ${errorText}`)
   }
 
-  const data = (await response.json()) as ChatCompletion
-  const choice = data.choices?.[0]
-  if (!choice) {
-    throw new Error('OpenRouter response missing choices.')
-  }
-
-  const content = choice.message?.content
-  if (!content) {
-    throw new Error('OpenRouter response missing message.content.')
-  }
-
-  let parsed: AiAction
-  try {
-    parsed = JSON.parse(content) as AiAction
-  } catch (error) {
-    console.error('Failed to parse OpenRouter JSON:', content, error)
-    throw new Error('OpenRouter response is not valid JSON.')
-  }
-
-  return {
-    action: parsed,
-    raw: data,
-    thinking: choice.message?.reasoning ?? choice.message?.thinking
-  }
+  const data = (await response.json()) as AiResponse
+  return data
 }
