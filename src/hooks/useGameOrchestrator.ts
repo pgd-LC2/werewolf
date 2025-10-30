@@ -383,13 +383,7 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
     console.log('[白天序列] 讨论阶段')
     logic.setPhase('Discussion')
     await waitForTempo()
-    const discussions = await safeInvoke(handlers.onDiscussion, fallbackDiscussion, context)
-    for (const item of discussions) {
-      const speakerName =
-        context.state.players.find((player) => player.id === item.speakerId)?.name ?? '未知玩家'
-      logic.setPhase('Discussion', `${speakerName}：${item.speech}`)
-      await waitForTempo()
-    }
+    await safeInvoke(handlers.onDiscussion, fallbackDiscussion, context)
     await new Promise(resolve => setTimeout(resolve, 500))
 
     console.log('[白天序列] 投票阶段')
