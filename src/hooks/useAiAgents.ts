@@ -27,35 +27,47 @@ export function useAiAgents() {
       stage: string,
       stagePrompt: string,
       input: string,
-      options?: { model?: string }
+      options?: { model?: string; maxRetries?: number }
     ) => {
+      const maxRetries = options?.maxRetries ?? 3
       setAgentState(playerId, { loading: true, error: undefined })
-      try {
-        const history = aiContextManager.prepareStage(playerId, stage, stagePrompt)
-        const userMessage: ChatCompletionMessageParam = {
-          role: 'user',
-          content: input
-        }
-        const requestMessages = [...history, userMessage]
-        const response = await requestAiAction({
-          model: options?.model ?? DEFAULT_MODEL,
-          messages: requestMessages
-        })
-        aiContextManager.append(playerId, [
-          userMessage,
-          {
-            role: 'assistant',
-            content: JSON.stringify(response.action),
-            thinking: response.thinking
+
+      let lastError: Error | null = null
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const history = aiContextManager.prepareStage(playerId, stage, stagePrompt)
+          const userMessage: ChatCompletionMessageParam = {
+            role: 'user',
+            content: input
           }
-        ])
-        setAgentState(playerId, { loading: false, lastResponse: response })
-        return response
-      } catch (error) {
-        const message = error instanceof Error ? error.message : '未知错误'
-        setAgentState(playerId, { loading: false, error: message })
-        throw error
+          const requestMessages = [...history, userMessage]
+          const response = await requestAiAction({
+            model: options?.model ?? DEFAULT_MODEL,
+            messages: requestMessages
+          })
+          aiContextManager.append(playerId, [
+            userMessage,
+            {
+              role: 'assistant',
+              content: JSON.stringify(response.action),
+              thinking: response.thinking
+            }
+          ])
+          setAgentState(playerId, { loading: false, lastResponse: response })
+          return response
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error('未知错误')
+          console.warn(`[AI Agent] 尝试 ${attempt}/${maxRetries} 失败:`, lastError.message)
+
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+          }
+        }
       }
+
+      const message = lastError?.message ?? '未知错误'
+      setAgentState(playerId, { loading: false, error: message })
+      throw lastError ?? new Error('AI 请求失败')
     },
     [setAgentState]
   )

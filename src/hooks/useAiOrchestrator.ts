@@ -308,7 +308,6 @@ export function useAiOrchestrator() {
         }
 
         const responses: { player: Player; decision: WerewolfDecision; confidence: number }[] = []
-        const entries: LogEntryPayload[] = []
 
         for (let i = 0; i < wolves.length; i++) {
           if (!aiStatusRef.current.enabled) break
@@ -324,7 +323,8 @@ export function useAiOrchestrator() {
             memory.lastAction = response.action.plan
             responses.push({ player: wolf, decision, confidence: response.action.confidence })
             const speech = response.action.speech?.trim() || response.action.plan || '（保持沉默）'
-            entries.push({
+
+            pushLogEntries([{
               message: `狼人 #${wolf.id} ${wolf.name}：${speech}`,
               replay: buildReplayEvent(
                 'WerewolfAction',
@@ -339,7 +339,7 @@ export function useAiOrchestrator() {
                   suggestedTargetId: targetId
                 }
               )
-            })
+            }])
 
             if (i < wolves.length - 1) {
               await new Promise(resolve => setTimeout(resolve, 500))
@@ -349,8 +349,6 @@ export function useAiOrchestrator() {
             break
           }
         }
-
-        pushLogEntries(entries)
 
         if (!aiStatusRef.current.enabled) {
           return offlineWerewolfDecision(context)
@@ -558,12 +556,10 @@ export function useAiOrchestrator() {
         }
 
         const speeches: DiscussionEvent[] = []
-        const entries: LogEntryPayload[] = []
 
         const alivePlayers = context.alivePlayers
         for (let i = 0; i < alivePlayers.length; i++) {
           if (!aiStatusRef.current.enabled) {
-            pushLogEntries(entries)
             return offlineDiscussion(context, speeches)
           }
 
@@ -582,7 +578,8 @@ export function useAiOrchestrator() {
               memory.notes.push(response.action.action.notes)
             }
             const order = speeches.length + 1
-            entries.push({
+
+            pushLogEntries([{
               message: `#${player.id} ${player.name} 发言：${speech}`,
               replay: buildReplayEvent(
                 'Discussion',
@@ -596,7 +593,8 @@ export function useAiOrchestrator() {
                   order
                 }
               )
-            })
+            }])
+
             speeches.push({ speakerId: player.id, speech: response.action.speech })
 
             if (i < alivePlayers.length - 1) {
@@ -604,12 +602,10 @@ export function useAiOrchestrator() {
             }
           } catch (error) {
             disableAiEngine('request_failed', error)
-            pushLogEntries(entries)
             return offlineDiscussion(context, speeches)
           }
         }
 
-        pushLogEntries(entries)
         return speeches
       },
       onVoting: async (context: DayContext): Promise<VotingDecision> => {
@@ -618,12 +614,10 @@ export function useAiOrchestrator() {
         }
 
         const votes: VotingDecision['votes'] = []
-        const entries: LogEntryPayload[] = []
 
         const alivePlayers = context.alivePlayers
         for (let i = 0; i < alivePlayers.length; i++) {
           if (!aiStatusRef.current.enabled) {
-            pushLogEntries(entries)
             return offlineVoting(context, votes)
           }
 
@@ -645,7 +639,8 @@ export function useAiOrchestrator() {
             const voteSummary = targetPlayer
               ? `投票给 #${targetPlayer.id} ${targetPlayer.name}`
               : '选择弃票'
-            entries.push({
+
+            pushLogEntries([{
               message: `#${player.id} ${player.name}：${voteSummary}`,
               replay: buildReplayEvent(
                 'Voting',
@@ -659,19 +654,17 @@ export function useAiOrchestrator() {
                   targetId
                 }
               )
-            })
+            }])
 
             if (i < alivePlayers.length - 1) {
               await new Promise(resolve => setTimeout(resolve, 500))
             }
           } catch (error) {
             disableAiEngine('request_failed', error)
-            pushLogEntries(entries)
             return offlineVoting(context, votes)
           }
         }
 
-        pushLogEntries(entries)
         return { votes }
       },
       onHunterAction: async (context: HunterContext): Promise<HunterDecision> => {
