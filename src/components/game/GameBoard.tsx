@@ -34,8 +34,6 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
   const orchestrator = useAiOrchestrator()
   const {
     state,
-    runNightSequence,
-    runDaySequence,
     runFullCycle,
     startGame,
     resetAllAgents,
@@ -44,16 +42,11 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
     aiStatus
   } = orchestrator
 
-  const { delayMs: tempoDelay, skipDelays, paused, setDelay, setSkipDelays, pause, resume } = tempo
+  const { paused, pause, resume } = tempo
 
   const [autoRunning, setAutoRunning] = useState(false)
   const [namesInput, setNamesInput] = useState(initialNames.join('\n'))
   const [showThinking, setShowThinking] = useState(false)
-  const [localDelay, setLocalDelay] = useState(tempoDelay)
-
-  useEffect(() => {
-    setLocalDelay(tempoDelay)
-  }, [tempoDelay])
 
   const players = state.players
   const alivePlayers = players.filter((player) => player.isAlive)
@@ -93,12 +86,6 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
     return `AI 引擎调用失败，已切换至预设策略。${detail}`
   }, [aiStatus])
 
-  const ensureGameStarted = () => {
-    if (state.phase === 'RoleAssignment') {
-      startGame(parsedNames)
-    }
-  }
-
   const prepareNewGame = () => {
     resetAllAgents()
     startGame(parsedNames)
@@ -106,30 +93,12 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
 
   const handleStartGame = () => {
     prepareNewGame()
-    setSkipDelays(false)
     resume()
     setAutoRunning(false)
   }
 
   const handleOneClickStart = () => {
     prepareNewGame()
-    setSkipDelays(false)
-    resume()
-    setAutoRunning(true)
-  }
-
-  const handleRunNight = async () => {
-    ensureGameStarted()
-    await runNightSequence()
-  }
-
-  const handleRunDay = async () => {
-    ensureGameStarted()
-    await runDaySequence()
-  }
-
-  const handleAuto = () => {
-    ensureGameStarted()
     resume()
     setAutoRunning(true)
   }
@@ -141,15 +110,6 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
     } else {
       pause()
     }
-  }
-
-  const handleDelayInput = (value: number) => {
-    setLocalDelay(value)
-    setDelay(value)
-  }
-
-  const handleSkipToggle = (checked: boolean) => {
-    setSkipDelays(checked)
   }
 
   const runFullCycleRef = useRef(runFullCycle)
@@ -273,10 +233,6 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
             ) : null}
           </div>
           <div className='flex flex-wrap items-center gap-2'>
-            <Button variant='muted' onClick={handleStartGame} className='text-xs uppercase tracking-[0.3em]'>
-              <PlayCircle className='mr-2 h-4 w-4' />
-              重新开局
-            </Button>
             <Button
               variant='primary'
               onClick={handleOneClickStart}
@@ -286,26 +242,9 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
               <Zap className='mr-2 h-4 w-4' />
               一键全程
             </Button>
-            <Button
-              variant='ghost'
-              onClick={handleRunNight}
-              disabled={state.phase === 'RoleAssignment' || state.phase === 'GameOver'}
-            >
-              执行夜晚
-            </Button>
-            <Button
-              variant='ghost'
-              onClick={handleRunDay}
-              disabled={state.phase === 'RoleAssignment' || state.phase === 'GameOver'}
-            >
-              执行白天
-            </Button>
-            <Button
-              variant='ghost'
-              onClick={handleAuto}
-              disabled={autoRunning || state.phase === 'GameOver'}
-            >
-              自动继续
+            <Button variant='muted' onClick={handleStartGame} className='text-xs uppercase tracking-[0.3em]'>
+              <PlayCircle className='mr-2 h-4 w-4' />
+              重置
             </Button>
             <Button
               variant='ghost'
@@ -321,29 +260,6 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
 
         <div className='flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-300'>
           <span>当前模式：{autoStatus}</span>
-          <label className='flex items-center gap-2'>
-            <span>阶段间隔</span>
-            <input
-              type='range'
-              min={0}
-              max={3000}
-              step={50}
-              value={localDelay}
-              onChange={(event) => handleDelayInput(Number(event.target.value))}
-              disabled={skipDelays}
-              className='h-1 w-32 cursor-pointer'
-            />
-            <span>{localDelay} ms</span>
-          </label>
-          <label className='flex items-center gap-2'>
-            <input
-              type='checkbox'
-              checked={skipDelays}
-              onChange={(event) => handleSkipToggle(event.target.checked)}
-              className='h-3 w-3 rounded border-gray-400 accent-accent'
-            />
-            <span>跳过等待</span>
-          </label>
         </div>
       </header>
 

@@ -308,27 +308,33 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
   const runNightSequence = useCallback(async () => {
     const context = getContext()
 
+    console.log('[夜晚序列] 开始')
     logic.setPhase('Night', `夜幕降临 · 第 ${context.day + 1} 夜`)
     await waitForTempo()
     await safeInvoke(handlers.onNightStart, noop, context)
 
+    console.log('[夜晚序列] 狼人行动')
     logic.setPhase('WerewolfAction')
     await waitForTempo()
     const wolfDecision = await safeInvoke(handlers.onWerewolfAction, fallbackWerewolf, context)
     logic.setWerewolfTarget(wolfDecision.targetId ?? null)
     await waitForTempo()
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     const seerAlive = isRoleAlive(context.alivePlayers, 'Seer')
     if (seerAlive) {
+      console.log('[夜晚序列] 预言家行动')
       logic.setPhase('SeerAction')
       await waitForTempo()
       const seerDecision = await safeInvoke(handlers.onSeerAction, fallbackSeer, context)
       logic.setSeerTarget(seerDecision.targetId ?? null)
       await waitForTempo()
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
 
     const witchAlive = isRoleAlive(context.alivePlayers, 'Witch')
     if (witchAlive) {
+      console.log('[夜晚序列] 女巫行动')
       logic.setPhase('WitchAction')
       await waitForTempo()
       const witchDecision = await safeInvoke(handlers.onWitchAction, fallbackWitch, context)
@@ -339,16 +345,21 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
         logic.witchPoison(witchDecision.poisonTargetId)
       }
       await waitForTempo()
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
 
+    console.log('[夜晚序列] 结算夜晚结果')
     logic.resolveNight()
     await waitForTempo()
     await sleep(0)
     if (stateRef.current.phase === 'HunterAction') {
+      console.log('[夜晚序列] 猎人技能触发')
       await runHunterStage()
       await waitForTempo()
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
     await sleep(0)
+    console.log('[夜晚序列] 完成')
   }, [
     getContext,
     handlers.onNightStart,
@@ -363,10 +374,13 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
 
   const runDaySequence = useCallback(async () => {
     const context = getContext()
+
+    console.log('[白天序列] 开始')
     logic.setPhase('Day', `晨光初露 · 第 ${context.day} 天`)
     await waitForTempo()
     await safeInvoke(handlers.onDayStart, noop, context)
 
+    console.log('[白天序列] 讨论阶段')
     logic.setPhase('Discussion')
     await waitForTempo()
     const discussions = await safeInvoke(handlers.onDiscussion, fallbackDiscussion, context)
@@ -376,7 +390,9 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
       logic.setPhase('Discussion', `${speakerName}：${item.speech}`)
       await waitForTempo()
     }
+    await new Promise(resolve => setTimeout(resolve, 500))
 
+    console.log('[白天序列] 投票阶段')
     logic.setPhase('Voting', '进入投票阶段')
     await waitForTempo()
     const votingDecision = await safeInvoke(handlers.onVoting, fallbackVoting, context)
@@ -385,15 +401,20 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
         logic.castVote(vote.voterId, vote.targetId)
       }
     })
+    await new Promise(resolve => setTimeout(resolve, 500))
 
+    console.log('[白天序列] 结算投票结果')
     logic.resolveVoting()
     await waitForTempo()
     await sleep(0)
     if (stateRef.current.phase === 'HunterAction') {
+      console.log('[白天序列] 猎人技能触发')
       await runHunterStage()
       await waitForTempo()
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
     await sleep(0)
+    console.log('[白天序列] 完成')
   }, [
     getContext,
     handlers.onDayStart,
