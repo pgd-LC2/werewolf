@@ -263,41 +263,42 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
         </div>
       </header>
 
-      <div className='grid gap-6 lg:grid-cols-[2fr_1fr]'>
-        <section className='space-y-6'>
-          <div className='flex items-center justify-between'>
-            <h3 className='text-sm font-semibold tracking-[0.3em] text-gray-500 dark:text-gray-300'>玩家席位</h3>
-            <span className='text-xs text-gray-500 dark:text-gray-400'>
-              存活 {alivePlayers.length} / {players.length}
-            </span>
-          </div>
-          <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5'>
-            {players.map((player) => (
-              <div
-                key={player.id}
-                className={cn(
-                  'rounded-3xl border px-3 py-4 transition-all duration-300',
-                  player.isAlive
-                    ? 'border-indigo-200/60 bg-white/90 text-slate-900 shadow-sm hover:shadow-md backdrop-blur dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-slate-100'
-                    : 'border-red-500/60 bg-red-500/15 text-red-600 shadow-[0_0_20px_-8px_rgba(220,38,38,0.4)] dark:border-red-400/60 dark:bg-red-950/40 dark:text-red-300'
-                )}
-              >
-                <p className='text-sm font-semibold'>
-                  #{player.id} {player.name}
-                </p>
-                <p className='text-xs text-gray-500 dark:text-gray-400'>身份：{player.role}</p>
-                <p className='text-xs text-gray-500 dark:text-gray-400'>状态：{formatPlayerStatus(player.isAlive)}</p>
-                {player.lastNightRoleResult ? (
-                  <p className='mt-2 rounded-full bg-black/5 px-2.5 py-1.5 text-[11px] text-gray-600 dark:bg-white/10 dark:text-gray-300'>
-                    {player.lastNightRoleResult}
+      <div className='space-y-6'>
+        <div className='grid gap-6 lg:grid-cols-[1fr_320px]'>
+          <section className='space-y-6'>
+            <div className='flex items-center justify-between'>
+              <h3 className='text-sm font-semibold tracking-[0.3em] text-gray-500 dark:text-gray-300'>玩家席位</h3>
+              <span className='text-xs text-gray-500 dark:text-gray-400'>
+                存活 {alivePlayers.length} / {players.length}
+              </span>
+            </div>
+            <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5'>
+              {players.map((player) => (
+                <div
+                  key={player.id}
+                  className={cn(
+                    'rounded-3xl border px-3 py-4 transition-all duration-300',
+                    player.isAlive
+                      ? 'border-indigo-200/60 bg-white/90 text-slate-900 shadow-sm hover:shadow-md backdrop-blur dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-slate-100'
+                      : 'border-red-500/60 bg-red-500/15 text-red-600 shadow-[0_0_20px_-8px_rgba(220,38,38,0.4)] dark:border-red-400/60 dark:bg-red-950/40 dark:text-red-300'
+                  )}
+                >
+                  <p className='text-sm font-semibold'>
+                    #{player.id} {player.name}
                   </p>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </section>
+                  <p className='text-xs text-gray-500 dark:text-gray-400'>身份：{player.role}</p>
+                  <p className='text-xs text-gray-500 dark:text-gray-400'>状态：{formatPlayerStatus(player.isAlive)}</p>
+                  {player.lastNightRoleResult ? (
+                    <p className='mt-2 rounded-full bg-black/5 px-2.5 py-1.5 text-[11px] text-gray-600 dark:bg-white/10 dark:text-gray-300'>
+                      {player.lastNightRoleResult}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </section>
 
-        <aside className='space-y-4'>
+          <aside className='space-y-4'>
           <div className='space-y-2 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-4 text-sm dark:border-indigo-900/50 dark:bg-indigo-950/20'>
             <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>
               玩家昵称
@@ -311,106 +312,102 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
             <p className='text-xs text-gray-500 dark:text-gray-400'>不足 10 位时会自动补全默认昵称。</p>
           </div>
 
-          <div className='space-y-2 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-4 text-xs dark:border-indigo-900/50 dark:bg-indigo-950/20'>
-            <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>
-              AI 状态
-            </p>
-            <ul className='space-y-1'>
-              {players.map((player) => {
-                if (!aiStatus.enabled) {
-                  return (
-                    <li key={player.id} className='text-amber-600 dark:text-amber-200'>
-                      #{player.id} {player.name}：AI 离线（默认策略）
-                    </li>
-                  )
-                }
-                const agentState = agentStates[player.id]
-                if (!agentState) {
-                  return (
-                    <li key={player.id}>
-                      #{player.id} {player.name}：等待初始化
-                    </li>
-                  )
-                }
-                if (agentState.error) {
-                  return (
-                    <li key={player.id} className='text-red-500'>
-                      #{player.id} {player.name}：失败（{agentState.error}）
-                    </li>
-                  )
-                }
-                if (agentState.loading) {
-                  return (
-                    <li key={player.id}>
-                      #{player.id} {player.name}：思考中…
-                    </li>
-                  )
-                }
-                return (
-                  <li key={player.id}>
-                    #{player.id} {player.name}：就绪
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-
-          <div className='space-y-3 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-4 text-xs dark:border-indigo-900/50 dark:bg-indigo-950/20'>
-            <div className='flex items-center justify-between'>
-              <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>
-                AI 回应
-              </p>
-              <label className='flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400'>
-                <input
-                  type='checkbox'
-                  checked={showThinking}
-                  onChange={(event) => setShowThinking(event.target.checked)}
-                  className='h-3 w-3 rounded border-gray-400 accent-accent'
-                />
-                显示思考
-              </label>
-            </div>
-            <div className='max-h-72 space-y-2 overflow-y-auto pr-1'>
-              {aiPanels.map(({ player, confidence, offline, speechText, planText, actionText, thinkingText }) => (
-                <div
-                  key={player.id}
-                  className={cn(
-                    'rounded-2xl border border-indigo-200/60 bg-white/80 p-3 text-xs shadow-sm backdrop-blur dark:border-indigo-900/60 dark:bg-indigo-950/50',
-                    !player.isAlive && 'opacity-70'
-                  )}
-                >
-                  <div className='flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-200'>
-                    <span>
-                      #{player.id} {player.name} · {player.role}
-                    </span>
-                    <span>{offline ? 'AI 离线' : `信心 ${confidence}`}</span>
-                  </div>
-                  <p className='mt-1 text-[11px] text-base-foreground dark:text-slate-100'>
-                    发言：{speechText}
-                  </p>
-                  <p className='text-[11px] text-gray-500 dark:text-gray-400'>
-                    计划：{planText}
-                  </p>
-                  {actionText ? (
-                    <p className='text-[11px] text-gray-500 dark:text-gray-400'>动作：{actionText}</p>
-                  ) : null}
-                  {showThinking ? (
-                    <p className='mt-1 rounded-xl bg-indigo-50/60 p-2 text-[11px] text-gray-600 dark:bg-indigo-950/40 dark:text-gray-300'>
-                      {thinkingText}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
         </aside>
-      </div>
-
-      <section className='space-y-4'>
-        <div className='flex items-center justify-between'>
-          <h3 className='text-sm font-semibold tracking-[0.3em] text-gray-500 dark:text-gray-300'>对局日志</h3>
-          <span className='text-xs text-gray-500 dark:text-gray-400'>共 {state.gameLog.length} 条记录</span>
         </div>
+
+        <section className='rounded-3xl border border-indigo-200/50 bg-gradient-to-br from-indigo-50/50 to-purple-50/30 p-6 dark:border-indigo-900/50 dark:from-indigo-950/30 dark:to-purple-950/20'>
+          <div className='mb-4 flex items-center justify-between'>
+            <h3 className='text-sm font-semibold tracking-[0.3em] text-gray-500 dark:text-gray-300'>当前AI处理状态</h3>
+            <label className='flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400'>
+              <input
+                type='checkbox'
+                checked={showThinking}
+                onChange={(event) => setShowThinking(event.target.checked)}
+                className='h-3 w-3 rounded border-gray-400 accent-accent'
+              />
+              显示思考过程
+            </label>
+          </div>
+
+          {(() => {
+            const activePlayer = players.find(p => agentStates[p.id]?.loading)
+            if (!activePlayer) {
+              return (
+                <div className='rounded-2xl border border-indigo-200/40 bg-white/60 p-6 text-center text-sm text-gray-500 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-gray-400'>
+                  {state.phase === 'RoleAssignment' ? '等待游戏开始...' : '等待下一个AI行动...'}
+                </div>
+              )
+            }
+
+            const aiPanel = aiPanels.find(p => p.player.id === activePlayer.id)
+
+            return (
+              <div className='space-y-3 rounded-2xl border border-indigo-200/60 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-indigo-900/60 dark:bg-indigo-950/50'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='font-semibold text-slate-900 dark:text-slate-100'>
+                      #{activePlayer.id} {activePlayer.name}
+                    </p>
+                    <p className='text-xs text-gray-500 dark:text-gray-400'>
+                      {activePlayer.role} · {phaseLabel}
+                    </p>
+                  </div>
+                  <div className='flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400'>
+                    <div className='h-2 w-2 animate-pulse rounded-full bg-indigo-600 dark:bg-indigo-400'></div>
+                    思考中...
+                  </div>
+                </div>
+
+                {aiPanel && (
+                  <div className='space-y-2 text-sm'>
+                    {aiPanel.speechText && (
+                      <div>
+                        <p className='text-xs font-medium text-gray-500 dark:text-gray-400'>发言内容</p>
+                        <p className='mt-1 text-base-foreground dark:text-slate-100'>{aiPanel.speechText}</p>
+                      </div>
+                    )}
+                    {aiPanel.planText && (
+                      <div>
+                        <p className='text-xs font-medium text-gray-500 dark:text-gray-400'>行动计划</p>
+                        <p className='mt-1 text-gray-700 dark:text-gray-300'>{aiPanel.planText}</p>
+                      </div>
+                    )}
+                    {aiPanel.actionText && (
+                      <div>
+                        <p className='text-xs font-medium text-gray-500 dark:text-gray-400'>决策结果</p>
+                        <p className='mt-1 text-gray-700 dark:text-gray-300'>{aiPanel.actionText}</p>
+                      </div>
+                    )}
+                    {showThinking && aiPanel.thinkingText && (
+                      <div className='rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/40'>
+                        <p className='text-xs font-medium text-gray-500 dark:text-gray-400'>推理过程</p>
+                        <p className='mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300'>{aiPanel.thinkingText}</p>
+                      </div>
+                    )}
+                    {typeof aiPanel.confidence === 'number' && !aiPanel.offline && (
+                      <div className='flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400'>
+                        <span>信心指数：</span>
+                        <div className='h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700'>
+                          <div
+                            className='h-full bg-indigo-500 transition-all dark:bg-indigo-400'
+                            style={{ width: `${(aiPanel.confidence || 0) * 100}%` }}
+                          ></div>
+                        </div>
+                        <span>{Math.round((aiPanel.confidence || 0) * 100)}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </section>
+
+        <section className='space-y-4'>
+          <div className='flex items-center justify-between'>
+            <h3 className='text-sm font-semibold tracking-[0.3em] text-gray-500 dark:text-gray-300'>对局日志</h3>
+            <span className='text-xs text-gray-500 dark:text-gray-400'>共 {state.gameLog.length} 条记录</span>
+          </div>
         <div className='max-h-96 space-y-2 overflow-y-auto rounded-2xl border border-indigo-200/60 bg-white/80 p-4 text-sm text-base-foreground shadow-inner dark:border-indigo-900/60 dark:bg-indigo-950/50 dark:text-slate-100'>
           {state.gameLog.length ? (
             state.gameLog.map((log, index) => (
@@ -439,6 +436,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
           </div>
         ) : null}
       </section>
+      </div>
     </section>
   )
 }
