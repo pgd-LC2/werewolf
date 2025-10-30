@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PauseCircle, PlayCircle, Zap } from 'lucide-react'
+import { PauseCircle, PlayCircle, Zap, X } from 'lucide-react'
 import { useAiOrchestrator } from '../../hooks/useAiOrchestrator'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
@@ -47,6 +47,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
   const [autoRunning, setAutoRunning] = useState(false)
   const [namesInput, setNamesInput] = useState(initialNames.join('\n'))
   const [showThinking, setShowThinking] = useState(false)
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
 
   const players = state.players
   const alivePlayers = players.filter((player) => player.isAlive)
@@ -273,28 +274,37 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
               </span>
             </div>
             <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5'>
-              {players.map((player) => (
-                <div
-                  key={player.id}
-                  className={cn(
-                    'rounded-3xl border px-3 py-4 transition-all duration-300',
-                    player.isAlive
-                      ? 'border-indigo-200/60 bg-white/90 text-slate-900 shadow-sm hover:shadow-md backdrop-blur dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-slate-100'
-                      : 'border-red-500/60 bg-red-500/15 text-red-600 shadow-[0_0_20px_-8px_rgba(220,38,38,0.4)] dark:border-red-400/60 dark:bg-red-950/40 dark:text-red-300'
-                  )}
-                >
-                  <p className='text-sm font-semibold'>
-                    #{player.id} {player.name}
-                  </p>
-                  <p className='text-xs text-gray-500 dark:text-gray-400'>身份：{player.role}</p>
-                  <p className='text-xs text-gray-500 dark:text-gray-400'>状态：{formatPlayerStatus(player.isAlive)}</p>
-                  {player.lastNightRoleResult ? (
-                    <p className='mt-2 rounded-full bg-black/5 px-2.5 py-1.5 text-[11px] text-gray-600 dark:bg-white/10 dark:text-gray-300'>
-                      {player.lastNightRoleResult}
+              {players.map((player) => {
+                const hasAiData = agentStates[player.id]?.lastResponse
+                return (
+                  <button
+                    key={player.id}
+                    onClick={() => setSelectedPlayerId(player.id)}
+                    className={cn(
+                      'group relative rounded-3xl border px-3 py-4 text-left transition-all duration-300',
+                      player.isAlive
+                        ? 'border-indigo-200/60 bg-white/90 text-slate-900 shadow-sm hover:shadow-md hover:scale-[1.02] backdrop-blur dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-slate-100'
+                        : 'border-red-500/60 bg-red-500/15 text-red-600 shadow-[0_0_20px_-8px_rgba(220,38,38,0.4)] dark:border-red-400/60 dark:bg-red-950/40 dark:text-red-300',
+                      hasAiData && 'cursor-pointer'
+                    )}
+                    disabled={!hasAiData}
+                  >
+                    {hasAiData && (
+                      <div className='absolute -right-1 -top-1 h-3 w-3 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-indigo-950'></div>
+                    )}
+                    <p className='text-sm font-semibold'>
+                      #{player.id} {player.name}
                     </p>
-                  ) : null}
-                </div>
-              ))}
+                    <p className='text-xs text-gray-500 dark:text-gray-400'>身份：{player.role}</p>
+                    <p className='text-xs text-gray-500 dark:text-gray-400'>状态：{formatPlayerStatus(player.isAlive)}</p>
+                    {player.lastNightRoleResult ? (
+                      <p className='mt-2 rounded-full bg-black/5 px-2.5 py-1.5 text-[11px] text-gray-600 dark:bg-white/10 dark:text-gray-300'>
+                        {player.lastNightRoleResult}
+                      </p>
+                    ) : null}
+                  </button>
+                )
+              })}
             </div>
           </section>
 
@@ -437,6 +447,123 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
         ) : null}
       </section>
       </div>
+
+      {selectedPlayerId !== null && (() => {
+        const selectedPlayer = players.find(p => p.id === selectedPlayerId)
+        const agentState = agentStates[selectedPlayerId]
+        const aiPanel = aiPanels.find(p => p.player.id === selectedPlayerId)
+
+        if (!selectedPlayer || !aiPanel) return null
+
+        const isLoading = agentState?.loading || false
+        const isStaleData = !isLoading && agentState?.lastResponse
+
+        return (
+          <div
+            className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4'
+            onClick={() => setSelectedPlayerId(null)}
+          >
+            <div
+              className='relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-indigo-200/60 bg-white p-6 shadow-2xl dark:border-indigo-900/60 dark:bg-slate-900'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedPlayerId(null)}
+                className='absolute right-4 top-4 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300'
+              >
+                <X className='h-5 w-5' />
+              </button>
+
+              <div className='space-y-4'>
+                <div>
+                  <h3 className='text-2xl font-bold text-slate-900 dark:text-slate-100'>
+                    #{selectedPlayer.id} {selectedPlayer.name}
+                  </h3>
+                  <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+                    {selectedPlayer.role} · {formatPlayerStatus(selectedPlayer.isAlive)}
+                  </p>
+                  {isStaleData && (
+                    <p className='mt-2 inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600 dark:bg-red-900/30 dark:text-red-400'>
+                      上一次返回
+                    </p>
+                  )}
+                  {isLoading && (
+                    <div className='mt-2 flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400'>
+                      <div className='h-2 w-2 animate-pulse rounded-full bg-indigo-600 dark:bg-indigo-400'></div>
+                      正在生成中...
+                    </div>
+                  )}
+                </div>
+
+                <div className='space-y-4'>
+                  {aiPanel.speechText && (
+                    <div className='rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30'>
+                      <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400'>
+                        发言内容
+                      </p>
+                      <p className='mt-2 text-base text-slate-900 dark:text-slate-100'>
+                        {aiPanel.speechText}
+                      </p>
+                    </div>
+                  )}
+
+                  {aiPanel.planText && (
+                    <div className='rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30'>
+                      <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400'>
+                        行动计划
+                      </p>
+                      <p className='mt-2 text-sm text-gray-700 dark:text-gray-300'>
+                        {aiPanel.planText}
+                      </p>
+                    </div>
+                  )}
+
+                  {aiPanel.actionText && (
+                    <div className='rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30'>
+                      <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400'>
+                        决策结果
+                      </p>
+                      <p className='mt-2 text-sm font-medium text-slate-900 dark:text-slate-100'>
+                        {aiPanel.actionText}
+                      </p>
+                    </div>
+                  )}
+
+                  {aiPanel.confidence && !aiPanel.offline && (
+                    <div className='rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30'>
+                      <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400'>
+                        信心指数
+                      </p>
+                      <div className='mt-2 flex items-center gap-3'>
+                        <div className='h-2 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700'>
+                          <div
+                            className='h-full bg-indigo-500 transition-all dark:bg-indigo-400'
+                            style={{ width: aiPanel.confidence }}
+                          ></div>
+                        </div>
+                        <span className='text-sm font-medium text-slate-900 dark:text-slate-100'>
+                          {aiPanel.confidence}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {aiPanel.thinkingText && aiPanel.thinkingText !== '未公布思考过程' && (
+                    <div className='rounded-2xl border border-violet-100 bg-violet-50/50 p-4 dark:border-violet-900/50 dark:bg-violet-950/30'>
+                      <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400'>
+                        推理过程
+                      </p>
+                      <p className='mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300 whitespace-pre-wrap'>
+                        {aiPanel.thinkingText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </section>
   )
 }
