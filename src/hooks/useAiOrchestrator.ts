@@ -303,8 +303,9 @@ export function useAiOrchestrator() {
         const responses: { player: Player; decision: WerewolfDecision; confidence: number }[] = []
         const entries: LogEntryPayload[] = []
 
-        for (const wolf of wolves) {
+        for (let i = 0; i < wolves.length; i++) {
           if (!aiStatusRef.current.enabled) break
+          const wolf = wolves[i]
           const memory = ensureMemory(memoryRef.current, wolf.id)
           const profile = buildPlayerProfile(context.state, wolf, memory)
           const prompt = buildWerewolfPrompt(profile, context, memory)
@@ -331,6 +332,10 @@ export function useAiOrchestrator() {
                 }
               )
             })
+
+            if (i < wolves.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
           } catch (error) {
             disableAiEngine('request_failed', error)
             break
@@ -546,12 +551,14 @@ export function useAiOrchestrator() {
         const speeches: DiscussionEvent[] = []
         const entries: LogEntryPayload[] = []
 
-        for (const player of context.alivePlayers) {
+        const alivePlayers = context.alivePlayers
+        for (let i = 0; i < alivePlayers.length; i++) {
           if (!aiStatusRef.current.enabled) {
             pushLogEntries(entries)
             return offlineDiscussion(context, speeches)
           }
 
+          const player = alivePlayers[i]
           const memory = ensureMemory(memoryRef.current, player.id)
           const profile = buildPlayerProfile(context.state, player, memory)
           const prompt = buildDiscussionPrompt(profile, context, memory, speeches)
@@ -581,6 +588,10 @@ export function useAiOrchestrator() {
               )
             })
             speeches.push({ speakerId: player.id, speech: response.action.speech })
+
+            if (i < alivePlayers.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
           } catch (error) {
             disableAiEngine('request_failed', error)
             pushLogEntries(entries)
@@ -599,12 +610,14 @@ export function useAiOrchestrator() {
         const votes: VotingDecision['votes'] = []
         const entries: LogEntryPayload[] = []
 
-        for (const player of context.alivePlayers) {
+        const alivePlayers = context.alivePlayers
+        for (let i = 0; i < alivePlayers.length; i++) {
           if (!aiStatusRef.current.enabled) {
             pushLogEntries(entries)
             return offlineVoting(context, votes)
           }
 
+          const player = alivePlayers[i]
           const memory = ensureMemory(memoryRef.current, player.id)
           const profile = buildPlayerProfile(context.state, player, memory)
           const prompt = buildVotingPrompt(profile, context, memory)
@@ -636,6 +649,10 @@ export function useAiOrchestrator() {
                 }
               )
             })
+
+            if (i < alivePlayers.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
           } catch (error) {
             disableAiEngine('request_failed', error)
             pushLogEntries(entries)
