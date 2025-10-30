@@ -211,19 +211,19 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
   })
 
   const containerTone = cn(
-    'space-y-8 rounded-[28px] border border-surface-highlight/40 p-6 shadow-soft transition-colors duration-500',
+    'space-y-8 rounded-[32px] border p-6 shadow-soft transition-all duration-700',
     isNightPhase
-      ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-gray-900 text-slate-100'
-      : 'bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:text-slate-100'
+      ? 'border-indigo-900/40 bg-gradient-to-br from-slate-950 via-indigo-950/80 to-violet-950/60 text-slate-100 shadow-[0_0_80px_-20px_rgba(99,102,241,0.3)]'
+      : 'border-surface-highlight/50 bg-gradient-to-br from-blue-50/80 via-white to-slate-50/80 text-slate-900 dark:border-indigo-900/30 dark:from-slate-900 dark:via-indigo-950/60 dark:to-slate-950 dark:text-slate-100'
   )
 
   const phaseBadge = cn(
-    'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.3em]',
+    'inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-[0.3em]',
     isNightPhase
-      ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-200'
+      ? 'border border-indigo-400/50 bg-indigo-500/15 text-indigo-200 shadow-[0_0_12px_rgba(129,140,248,0.2)]'
       : isDayPhase
-        ? 'border border-amber-500/40 bg-amber-400/15 text-amber-700 dark:text-amber-200'
-        : 'border border-purple-500/40 bg-purple-500/10 text-purple-200'
+        ? 'border border-amber-500/50 bg-amber-400/20 text-amber-700 shadow-[0_0_12px_rgba(251,191,36,0.15)] dark:text-amber-200'
+        : 'border border-violet-500/50 bg-violet-500/15 text-violet-300 shadow-[0_0_12px_rgba(139,92,246,0.2)]'
   )
 
   return (
@@ -245,7 +245,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
               </span>
             </p>
             {aiStatusMessage ? (
-              <p className='mt-2 rounded-2xl border border-amber-400/40 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-300/30 dark:bg-amber-500/10 dark:text-amber-200'>
+              <p className='mt-2 rounded-full border border-amber-400/40 bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:border-amber-300/30 dark:bg-amber-500/10 dark:text-amber-200'>
                 {aiStatusMessage}
               </p>
             ) : null}
@@ -343,10 +343,10 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
               <div
                 key={player.id}
                 className={cn(
-                  'rounded-3xl border px-3 py-4 transition-all',
+                  'rounded-3xl border px-3 py-4 transition-all duration-300',
                   player.isAlive
-                    ? 'border-surface-highlight/80 bg-white/80 text-slate-900 backdrop-blur dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-100'
-                    : 'border-red-500/50 bg-red-500/10 text-red-500 dark:border-red-400/60 dark:text-red-300'
+                    ? 'border-indigo-200/60 bg-white/90 text-slate-900 shadow-sm hover:shadow-md backdrop-blur dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-slate-100'
+                    : 'border-red-500/60 bg-red-500/15 text-red-600 shadow-[0_0_20px_-8px_rgba(220,38,38,0.4)] dark:border-red-400/60 dark:bg-red-950/40 dark:text-red-300'
                 )}
               >
                 <p className='text-sm font-semibold'>
@@ -355,7 +355,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
                 <p className='text-xs text-gray-500 dark:text-gray-400'>身份：{player.role}</p>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>状态：{formatPlayerStatus(player.isAlive)}</p>
                 {player.lastNightRoleResult ? (
-                  <p className='mt-2 rounded-2xl bg-black/5 p-2 text-[11px] text-gray-600 dark:bg-white/10 dark:text-gray-300'>
+                  <p className='mt-2 rounded-full bg-black/5 px-2.5 py-1.5 text-[11px] text-gray-600 dark:bg-white/10 dark:text-gray-300'>
                     {player.lastNightRoleResult}
                   </p>
                 ) : null}
@@ -365,12 +365,12 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
         </section>
 
         <aside className='space-y-4'>
-          <div className='space-y-2 rounded-3xl border border-surface-highlight/60 bg-black/5 p-4 text-sm dark:bg-white/5'>
+          <div className='space-y-2 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-4 text-sm dark:border-indigo-900/50 dark:bg-indigo-950/20'>
             <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>
               玩家昵称
             </p>
             <textarea
-              className='h-32 w-full rounded-2xl border border-surface-highlight/60 bg-transparent p-3 outline-none transition focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/40'
+              className='h-32 w-full rounded-2xl border border-indigo-200/60 bg-white/60 p-3 outline-none transition focus-visible:border-moon focus-visible:ring-2 focus-visible:ring-moon/30 dark:border-indigo-900/60 dark:bg-indigo-950/40'
               value={namesInput}
               onChange={(event) => setNamesInput(event.target.value)}
               placeholder='按行或逗号输入 10 位玩家昵称'
@@ -378,7 +378,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
             <p className='text-xs text-gray-500 dark:text-gray-400'>不足 10 位时会自动补全默认昵称。</p>
           </div>
 
-          <div className='space-y-2 rounded-3xl border border-surface-highlight/60 bg-black/5 p-4 text-xs dark:bg-white/5'>
+          <div className='space-y-2 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-4 text-xs dark:border-indigo-900/50 dark:bg-indigo-950/20'>
             <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>
               AI 状态
             </p>
@@ -422,7 +422,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
             </ul>
           </div>
 
-          <div className='space-y-3 rounded-3xl border border-surface-highlight/60 bg-black/5 p-4 text-xs dark:bg-white/5'>
+          <div className='space-y-3 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-4 text-xs dark:border-indigo-900/50 dark:bg-indigo-950/20'>
             <div className='flex items-center justify-between'>
               <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>
                 AI 回应
@@ -442,7 +442,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
                 <div
                   key={player.id}
                   className={cn(
-                    'rounded-2xl border border-surface-highlight/50 bg-white/70 p-3 text-xs shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70',
+                    'rounded-2xl border border-indigo-200/60 bg-white/80 p-3 text-xs shadow-sm backdrop-blur dark:border-indigo-900/60 dark:bg-indigo-950/50',
                     !player.isAlive && 'opacity-70'
                   )}
                 >
@@ -462,7 +462,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
                     <p className='text-[11px] text-gray-500 dark:text-gray-400'>动作：{actionText}</p>
                   ) : null}
                   {showThinking ? (
-                    <p className='mt-1 rounded-xl bg-black/5 p-2 text-[11px] text-gray-600 dark:bg-white/5 dark:text-gray-300'>
+                    <p className='mt-1 rounded-xl bg-indigo-50/60 p-2 text-[11px] text-gray-600 dark:bg-indigo-950/40 dark:text-gray-300'>
                       {thinkingText}
                     </p>
                   ) : null}
@@ -478,12 +478,12 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
           <h3 className='text-sm font-semibold tracking-[0.3em] text-gray-500 dark:text-gray-300'>对局日志</h3>
           <span className='text-xs text-gray-500 dark:text-gray-400'>共 {state.gameLog.length} 条记录</span>
         </div>
-        <div className='max-h-96 space-y-2 overflow-y-auto rounded-2xl border border-surface-highlight/60 bg-white/70 p-4 text-sm text-base-foreground shadow-inner dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100'>
+        <div className='max-h-96 space-y-2 overflow-y-auto rounded-2xl border border-indigo-200/60 bg-white/80 p-4 text-sm text-base-foreground shadow-inner dark:border-indigo-900/60 dark:bg-indigo-950/50 dark:text-slate-100'>
           {state.gameLog.length ? (
             state.gameLog.map((log, index) => (
               <p
                 key={`${log}-${index}`}
-                className='rounded-xl bg-black/5 px-3 py-2 text-sm font-semibold text-base-foreground dark:bg-white/10'
+                className='rounded-xl bg-indigo-50/50 px-3 py-2 text-sm font-medium text-base-foreground dark:bg-indigo-950/40'
               >
                 {log}
               </p>
@@ -494,11 +494,11 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
         </div>
 
         {state.highlights.length ? (
-          <div className='space-y-2 rounded-2xl border border-surface-highlight/60 bg-white/70 p-4 text-xs text-gray-600 shadow-inner dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200'>
+          <div className='space-y-2 rounded-2xl border border-indigo-200/60 bg-white/80 p-4 text-xs text-gray-600 shadow-inner dark:border-indigo-900/60 dark:bg-indigo-950/50 dark:text-slate-200'>
             <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>关键事件</p>
             <ul className='space-y-1'>
               {state.highlights.map((item, index) => (
-                <li key={`${item}-${index}`} className='rounded-xl bg-black/5 px-3 py-2 dark:bg-white/10'>
+                <li key={`${item}-${index}`} className='rounded-xl bg-indigo-50/50 px-3 py-2 dark:bg-indigo-950/40'>
                   {item}
                 </li>
               ))}

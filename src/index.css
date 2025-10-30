@@ -4,24 +4,28 @@
 
 :root {
   color-scheme: light;
-  --color-base: 60 18% 96%;
-  --color-base-foreground: 120 6% 12%;
-  --color-surface: 60 12% 94%;
-  --color-surface-muted: 60 8% 90%;
-  --color-surface-highlight: 60 12% 88%;
-  --color-accent: 50 22% 30%;
-  --color-accent-foreground: 60 20% 94%;
+  --color-base: 220 15% 96%;
+  --color-base-foreground: 220 15% 15%;
+  --color-surface: 220 12% 92%;
+  --color-surface-muted: 220 10% 88%;
+  --color-surface-highlight: 220 12% 85%;
+  --color-accent: 340 75% 48%;
+  --color-accent-foreground: 0 0% 100%;
+  --color-night: 240 45% 12%;
+  --color-day: 45 95% 70%;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --color-base: 120 8% 8%;
-  --color-base-foreground: 60 15% 92%;
-  --color-surface: 120 6% 12%;
-  --color-surface-muted: 120 6% 16%;
-  --color-surface-highlight: 120 8% 20%;
-  --color-accent: 50 38% 55%;
-  --color-accent-foreground: 120 10% 8%;
+  --color-base: 240 25% 8%;
+  --color-base-foreground: 220 15% 92%;
+  --color-surface: 240 20% 12%;
+  --color-surface-muted: 240 18% 16%;
+  --color-surface-highlight: 240 20% 20%;
+  --color-accent: 340 85% 55%;
+  --color-accent-foreground: 0 0% 100%;
+  --color-night: 240 50% 10%;
+  --color-day: 45 80% 60%;
 }
 
 @layer base {
@@ -31,8 +35,10 @@
 
   body {
     @apply bg-base text-base-foreground font-sans antialiased min-h-screen;
-    background-image: radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.25), transparent 45%),
-      radial-gradient(circle at 90% 10%, rgba(112, 120, 90, 0.25), transparent 40%);
+    background-image:
+      radial-gradient(circle at 15% 25%, rgba(99, 102, 241, 0.08), transparent 50%),
+      radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.06), transparent 45%),
+      radial-gradient(circle at 50% 80%, rgba(220, 38, 38, 0.04), transparent 40%);
   }
 
   ::selection {

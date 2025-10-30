@@ -5,14 +5,14 @@ export default {
     extend: {
       colors: {
         gray: {
-          50: '#f7f7f4',
-          100: '#efefe7',
-          200: '#dedfd2',
-          300: '#c8cabb',
-          500: '#8f9185',
-          700: '#4d4f45',
-          800: '#2b2d25',
-          900: '#161711'
+          50: '#f8f9fa',
+          100: '#e9ecef',
+          200: '#dee2e6',
+          300: '#ced4da',
+          500: '#6c757d',
+          700: '#495057',
+          800: '#343a40',
+          900: '#212529'
         },
         base: {
           DEFAULT: 'hsl(var(--color-base) / <alpha-value>)',
@@ -27,7 +27,12 @@ export default {
           DEFAULT: 'hsl(var(--color-accent) / <alpha-value>)',
           foreground: 'hsl(var(--color-accent-foreground) / <alpha-value>)'
         },
-        warn: '#d64545'
+        night: 'hsl(var(--color-night) / <alpha-value>)',
+        day: 'hsl(var(--color-day) / <alpha-value>)',
+        blood: '#dc2626',
+        moon: '#818cf8',
+        wolf: '#7c3aed',
+        warn: '#dc2626'
       },
       fontFamily: {
         sans: ['"SF Pro Display"', 'Inter', 'HarmonyOS Sans', 'system-ui', 'sans-serif']

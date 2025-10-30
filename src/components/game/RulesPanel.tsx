@@ -16,9 +16,9 @@ export function RulesPanel() {
         </div>
       </header>
 
-      <div className="grid gap-4 rounded-3xl border border-surface-highlight/60 bg-surface p-6 text-sm text-gray-600 dark:bg-slate-900 dark:text-gray-300">
+      <div className="grid gap-4 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-6 text-sm text-gray-600 dark:border-indigo-900/50 dark:bg-indigo-950/20 dark:text-gray-300">
         {RULE_OVERVIEW.map((item) => (
-          <p key={item} className="rounded-2xl border border-surface-highlight/40 bg-white/5 px-4 py-2 leading-relaxed dark:bg-white/10">
+          <p key={item} className="rounded-full border border-indigo-200/40 bg-white/60 px-4 py-2.5 leading-relaxed dark:border-indigo-900/40 dark:bg-indigo-950/30">
             {item}
           </p>
         ))}
@@ -28,19 +28,19 @@ export function RulesPanel() {
         {categories.map(([category, rules]) => (
           <div
             key={category}
-            className="space-y-4 rounded-3xl border border-surface-highlight/60 bg-base/70 p-6 shadow-subtle dark:bg-slate-900/80"
+            className="space-y-4 rounded-3xl border border-indigo-200/50 bg-white/60 p-6 shadow-subtle dark:border-indigo-900/50 dark:bg-indigo-950/30"
           >
             <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">{category}</h3>
             <div className="space-y-4">
               {rules.map((rule) => (
-                <article key={rule.title} className="space-y-2 rounded-2xl border border-surface-highlight/40 bg-white/5 p-4 dark:bg-white/10">
+                <article key={rule.title} className="space-y-2 rounded-2xl border border-indigo-200/40 bg-indigo-50/30 p-4 dark:border-indigo-900/40 dark:bg-indigo-950/20">
                   <h4 className="text-base font-semibold text-base-foreground">{rule.title}</h4>
                   <p className="text-sm text-gray-500 dark:text-gray-300">{rule.description}</p>
                   {rule.details ? (
                     <ul className="space-y-1 text-sm text-gray-500 dark:text-gray-400">
                       {rule.details.map((detail) => (
                         <li key={detail} className="flex gap-2">
-                          <span className="mt-[6px] h-1.5 w-1.5 rounded-full bg-accent"></span>
+                          <span className="mt-[6px] h-1.5 w-1.5 rounded-full bg-moon"></span>
                           <span>{detail}</span>
                         </li>
                       ))}

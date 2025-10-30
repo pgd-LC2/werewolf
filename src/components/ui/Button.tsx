@@ -11,9 +11,9 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-accent-foreground shadow-soft hover:bg-accent/90 border-transparent',
-  muted: 'bg-surface border border-surface-highlight/60 text-base-foreground hover:bg-surface-highlight/70',
-  ghost: 'bg-transparent border border-transparent text-base-foreground hover:bg-surface-highlight/30'
+  primary: 'bg-accent text-accent-foreground shadow-md hover:bg-accent/90 hover:shadow-lg border-transparent',
+  muted: 'bg-surface border border-indigo-200/50 text-base-foreground hover:bg-surface-highlight/80 dark:border-indigo-900/40',
+  ghost: 'bg-transparent border border-transparent text-base-foreground hover:bg-indigo-100/50 dark:hover:bg-indigo-950/30'
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
