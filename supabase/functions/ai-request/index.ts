@@ -117,16 +117,15 @@ Deno.serve(async (req: Request) => {
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "X-OpenRouter-Enable-Reasoning": "true",
-        "X-OpenRouter-Response-Thoughts": "true",
+        "HTTP-Referer": "https://werewolf-game.netlify.app",
+        "X-Title": "Werewolf AI Game",
       },
       body: JSON.stringify({
         model,
         temperature,
         messages,
         response_format: {
-          type: "json_schema",
-          json_schema: RESPONSE_SCHEMA,
+          type: "json_object",
         },
       }),
     });
@@ -150,10 +149,14 @@ Deno.serve(async (req: Request) => {
 
     const data = await response.json() as ChatCompletion;
     const choice = data.choices?.[0];
-    
+
     if (!choice) {
+      console.error("OpenRouter response missing choices:", JSON.stringify(data, null, 2));
       return new Response(
-        JSON.stringify({ error: "OpenRouter response missing choices" }),
+        JSON.stringify({
+          error: "OpenRouter response missing choices",
+          rawResponse: data
+        }),
         {
           status: 500,
           headers: {
@@ -166,8 +169,13 @@ Deno.serve(async (req: Request) => {
 
     const content = choice.message?.content;
     if (!content) {
+      console.error("OpenRouter response missing message.content:", JSON.stringify(data, null, 2));
       return new Response(
-        JSON.stringify({ error: "OpenRouter response missing message.content" }),
+        JSON.stringify({
+          error: "OpenRouter response missing message.content",
+          message: choice.message,
+          rawResponse: data
+        }),
         {
           status: 500,
           headers: {
