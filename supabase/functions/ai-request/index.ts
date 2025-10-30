@@ -167,9 +167,24 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const content = choice.message?.content;
+    let content = choice.message?.content;
+    const reasoning = choice.message?.reasoning;
+
+    // MiniMax模型会把JSON放在reasoning字段中，需要从中提取
+    if (!content && reasoning) {
+      console.log("Content is empty, trying to extract JSON from reasoning field");
+      // 尝试从reasoning中提取JSON代码块
+      const jsonMatch = reasoning.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
+        content = jsonMatch[1].trim();
+      } else {
+        // 如果没有代码块标记，尝试直接使用reasoning
+        content = reasoning;
+      }
+    }
+
     if (!content) {
-      console.error("OpenRouter response missing message.content:", JSON.stringify(data, null, 2));
+      console.error("OpenRouter response missing message.content and reasoning:", JSON.stringify(data, null, 2));
       return new Response(
         JSON.stringify({
           error: "OpenRouter response missing message.content",
