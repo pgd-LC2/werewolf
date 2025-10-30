@@ -51,33 +51,45 @@ interface ChatCompletion {
   [key: string]: unknown;
 }
 
-const RESPONSE_SCHEMA = {
-  name: "ai_action_schema",
-  schema: {
-    type: "object",
-    properties: {
-      speech: { type: "string" },
-      plan: { type: "string" },
-      confidence: {
-        type: "number",
-        minimum: 0,
-        maximum: 1,
-      },
-      action: {
-        type: "object",
-        properties: {
-          type: { type: "string" },
-          targetId: { type: ["integer", "null"] },
-          notes: { type: "string" },
-        },
-        required: ["type"],
-        additionalProperties: false,
-      },
+const AI_ACTION_SCHEMA = {
+  type: "object",
+  properties: {
+    speech: {
+      type: "string",
+      description: "AI的发言内容"
     },
-    required: ["speech", "plan", "confidence"],
-    additionalProperties: false,
+    plan: {
+      type: "string",
+      description: "AI的行动计划"
+    },
+    confidence: {
+      type: "number",
+      description: "置信度（0-1之间）",
+      minimum: 0,
+      maximum: 1,
+    },
+    action: {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          description: "行动类型"
+        },
+        targetId: {
+          type: ["integer", "null"],
+          description: "目标玩家ID"
+        },
+        notes: {
+          type: "string",
+          description: "行动备注"
+        },
+      },
+      required: ["type"],
+      additionalProperties: false,
+    },
   },
-  strict: true,
+  required: ["speech", "plan", "confidence"],
+  additionalProperties: false,
 };
 
 Deno.serve(async (req: Request) => {
@@ -125,7 +137,12 @@ Deno.serve(async (req: Request) => {
         temperature,
         messages,
         response_format: {
-          type: "json_object",
+          type: "json_schema",
+          json_schema: {
+            name: "ai_action_schema",
+            strict: true,
+            schema: AI_ACTION_SCHEMA,
+          },
         },
       }),
     });
@@ -173,13 +190,41 @@ Deno.serve(async (req: Request) => {
     // MiniMax模型会把JSON放在reasoning字段中，需要从中提取
     if (!content && reasoning) {
       console.log("Content is empty, trying to extract JSON from reasoning field");
-      // 尝试从reasoning中提取JSON代码块
-      const jsonMatch = reasoning.match(/```json\s*([\s\S]*?)\s*```/);
+
+      // 方法1: 尝试从reasoning中提取JSON代码块
+      let jsonMatch = reasoning.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch && jsonMatch[1]) {
         content = jsonMatch[1].trim();
       } else {
-        // 如果没有代码块标记，尝试直接使用reasoning
-        content = reasoning;
+        // 方法2: 查找最后一个完整的JSON对象（从最后的}向前匹配）
+        const lastBraceIndex = reasoning.lastIndexOf('}');
+        if (lastBraceIndex !== -1) {
+          // 从最后的}往前查找匹配的{
+          let braceCount = 0;
+          let startIndex = -1;
+          for (let i = lastBraceIndex; i >= 0; i--) {
+            if (reasoning[i] === '}') braceCount++;
+            if (reasoning[i] === '{') {
+              braceCount--;
+              if (braceCount === 0) {
+                startIndex = i;
+                break;
+              }
+            }
+          }
+          if (startIndex !== -1) {
+            const potentialJson = reasoning.substring(startIndex, lastBraceIndex + 1);
+            // 验证是否是有效JSON
+            try {
+              JSON.parse(potentialJson);
+              content = potentialJson;
+              console.log("Extracted JSON from reasoning field successfully");
+            } catch {
+              console.log("Failed to parse extracted JSON, using full reasoning");
+              content = reasoning;
+            }
+          }
+        }
       }
     }
 
