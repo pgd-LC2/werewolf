@@ -58,6 +58,7 @@ export function useAiOrchestrator() {
   const lastSeerTargetRef = useRef<number | null>(null)
   const lastWolfTargetRef = useRef<number | null>(null)
   const offlineNoticeRef = useRef(false)
+  const pausedRef = useRef(false)
 
   const initialStatus: AiEngineStatus = IS_OPENROUTER_CONFIGURED
     ? { enabled: true }
@@ -284,6 +285,12 @@ export function useAiOrchestrator() {
     [buildReplayEvent, ensureOfflineForCurrentStatus, pushLogEntries]
   )
 
+  const waitIfPaused = useCallback(async () => {
+    while (pausedRef.current) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+  }, [])
+
   const handlers = useMemo<Partial<OrchestratorHandlers>>(
     () => ({
       onNightStart: async (context: NightContext) => {
@@ -305,6 +312,7 @@ export function useAiOrchestrator() {
 
         for (let i = 0; i < wolves.length; i++) {
           if (!aiStatusRef.current.enabled) break
+          await waitIfPaused()
           const wolf = wolves[i]
           const memory = ensureMemory(memoryRef.current, wolf.id)
           const profile = buildPlayerProfile(context.state, wolf, memory)
@@ -382,6 +390,7 @@ export function useAiOrchestrator() {
           return offlineSeerDecision(context)
         }
 
+        await waitIfPaused()
         const profile = buildPlayerProfile(context.state, seer, memory)
         const prompt = buildSeerPrompt(profile, context, memory)
         try {
@@ -448,6 +457,7 @@ export function useAiOrchestrator() {
           return offlineWitchDecision(context)
         }
 
+        await waitIfPaused()
         const profile = buildPlayerProfile(context.state, witch, memory)
         const prompt = buildWitchPrompt(profile, context, memory, lastWolfTargetRef.current)
         try {
@@ -557,6 +567,7 @@ export function useAiOrchestrator() {
             return offlineDiscussion(context, speeches)
           }
 
+          await waitIfPaused()
           const player = alivePlayers[i]
           const memory = ensureMemory(memoryRef.current, player.id)
           const profile = buildPlayerProfile(context.state, player, memory)
@@ -616,6 +627,7 @@ export function useAiOrchestrator() {
             return offlineVoting(context, votes)
           }
 
+          await waitIfPaused()
           const player = alivePlayers[i]
           const memory = ensureMemory(memoryRef.current, player.id)
           const profile = buildPlayerProfile(context.state, player, memory)
@@ -671,6 +683,7 @@ export function useAiOrchestrator() {
         if (!hunter) return { targetId: null }
         const memory = ensureMemory(memoryRef.current, hunter.id)
 
+        await waitIfPaused()
         const profile = buildPlayerProfile(context.state, hunter, memory)
         const prompt = buildHunterPrompt(profile, context, memory)
         try {
@@ -753,13 +766,18 @@ export function useAiOrchestrator() {
       offlineWitchDecision,
       pushLogEntries,
       resetAgent,
-      buildReplayEvent
+      buildReplayEvent,
+      waitIfPaused
     ]
   )
 
   const orchestrator = useGameOrchestrator(handlers)
   appendLogRef.current = orchestrator.appendLog
   appendLogsRef.current = orchestrator.appendLogs
+
+  useEffect(() => {
+    pausedRef.current = orchestrator.tempo.paused
+  }, [orchestrator.tempo.paused])
 
   return {
     ...orchestrator,
@@ -773,6 +791,7 @@ export function useAiOrchestrator() {
       lastSeerTargetRef.current = null
       lastWolfTargetRef.current = null
       offlineNoticeRef.current = false
+      pausedRef.current = false
       const status: AiEngineStatus = IS_OPENROUTER_CONFIGURED
         ? { enabled: true }
         : { enabled: false, reason: 'missing_key', lastError: '缺少 OpenRouter API Key' }
