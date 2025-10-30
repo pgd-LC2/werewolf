@@ -9,7 +9,7 @@ export interface AiAgentState {
   lastResponse?: AiResponse
 }
 
-const DEFAULT_MODEL = 'deepseek/deepseek-r1:free'
+const DEFAULT_MODEL = 'minimax/minimax-m2:free'
 
 export function useAiAgents() {
   const [states, setStates] = useState<Record<number, AiAgentState>>({})
