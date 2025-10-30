@@ -155,12 +155,23 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
   }, [])
 
   const waitWhilePaused = useCallback(async () => {
+    const PAUSE_TIMEOUT = 30000
+    const startTime = Date.now()
+
     while (tempoRef.current.paused) {
+      if (Date.now() - startTime > PAUSE_TIMEOUT) {
+        console.error('[GameOrchestrator] 暂停超时，自动恢复')
+        tempoRef.current.paused = false
+        updateTempoSnapshot()
+        break
+      }
+
       await new Promise<void>((resolve) => {
         tempoRef.current.pauseResolvers.push(resolve)
+        setTimeout(() => resolve(), 100)
       })
     }
-  }, [])
+  }, [updateTempoSnapshot])
 
   const waitForTempo = useCallback(
     async () => {
@@ -332,10 +343,12 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
 
     logic.resolveNight()
     await waitForTempo()
+    await sleep(0)
     if (stateRef.current.phase === 'HunterAction') {
       await runHunterStage()
       await waitForTempo()
     }
+    await sleep(0)
   }, [
     getContext,
     handlers.onNightStart,
@@ -375,10 +388,12 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
 
     logic.resolveVoting()
     await waitForTempo()
+    await sleep(0)
     if (stateRef.current.phase === 'HunterAction') {
       await runHunterStage()
       await waitForTempo()
     }
+    await sleep(0)
   }, [
     getContext,
     handlers.onDayStart,
@@ -391,20 +406,59 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
   ])
 
   const runFullCycle = useCallback(async () => {
-    if (stateRef.current.phase === 'RoleAssignment') {
+    const getCurrentState = () => stateRef.current
+    const isGameOver = () => {
+      const state = getCurrentState()
+      return state.phase === 'GameOver' || state.winner !== 'none'
+    }
+
+    if (getCurrentState().phase === 'RoleAssignment') {
       throw new Error('请先调用 startGame 再开始自动流程。')
     }
 
-    while (true) {
+    const MAX_CYCLES = 50
+    let cycleCount = 0
+
+    console.log('[GameOrchestrator] 开始自动循环执行')
+
+    while (cycleCount < MAX_CYCLES) {
+      cycleCount++
+      const state = getCurrentState()
+      console.log(`[GameOrchestrator] 循环迭代 #${cycleCount}, 当前阶段: ${state.phase}, 天数: ${state.day}, 胜者: ${state.winner}`)
+
       await waitWhilePaused()
-      if (stateRef.current.phase === 'GameOver') break
+
+      if (isGameOver()) {
+        console.log('[GameOrchestrator] 检测到游戏已结束')
+        break
+      }
+
+      console.log('[GameOrchestrator] 执行夜晚序列')
       await runNightSequence()
-      if (stateRef.current.winner !== 'none') break
+
+      if (isGameOver()) {
+        console.log('[GameOrchestrator] 夜晚后游戏结束')
+        break
+      }
+
       await waitWhilePaused()
+
+      console.log('[GameOrchestrator] 执行白天序列')
       await runDaySequence()
+
+      if (isGameOver()) {
+        console.log('[GameOrchestrator] 白天后游戏结束')
+        break
+      }
     }
 
-    await safeInvoke(handlers.onGameOver, noop, stateRef.current)
+    if (cycleCount >= MAX_CYCLES) {
+      console.error('[GameOrchestrator] 达到最大循环次数，强制终止')
+      throw new Error(`游戏循环超过最大限制（${MAX_CYCLES}次），已强制终止`)
+    }
+
+    console.log('[GameOrchestrator] 循环结束，调用 onGameOver')
+    await safeInvoke(handlers.onGameOver, noop, getCurrentState())
   }, [handlers.onGameOver, runDaySequence, runNightSequence, safeInvoke, waitWhilePaused])
 
   const isAutoResolved = useCallback(() => {

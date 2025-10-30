@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { PauseCircle, PlayCircle, Zap } from 'lucide-react'
 import { useAiOrchestrator } from '../../hooks/useAiOrchestrator'
 import { Button } from '../ui/Button'
@@ -152,24 +152,41 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
     setSkipDelays(checked)
   }
 
+  const runFullCycleRef = useRef(runFullCycle)
   useEffect(() => {
-    if (!autoRunning) return
+    runFullCycleRef.current = runFullCycle
+  }, [runFullCycle])
+
+  const isRunningRef = useRef(false)
+
+  useEffect(() => {
+    if (!autoRunning || isRunningRef.current) return
+
+    isRunningRef.current = true
     let cancelled = false
+
+    console.log('[GameBoard] 启动自动执行流程')
+
     ;(async () => {
       try {
-        await runFullCycle()
+        await runFullCycleRef.current()
+        console.log('[GameBoard] 自动执行流程完成')
       } catch (error) {
-        console.error(error)
+        console.error('[GameBoard] 自动执行流程出错:', error)
       } finally {
+        isRunningRef.current = false
         if (!cancelled) {
           setAutoRunning(false)
+          console.log('[GameBoard] 自动执行流程结束，autoRunning 已设为 false')
         }
       }
     })()
+
     return () => {
       cancelled = true
+      console.log('[GameBoard] useEffect cleanup 被调用')
     }
-  }, [autoRunning, runFullCycle])
+  }, [autoRunning])
 
   const aiPanels = players.map((player) => {
     const offline = !aiStatus.enabled
