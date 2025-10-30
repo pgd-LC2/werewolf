@@ -389,6 +389,16 @@ export function useAiOrchestrator() {
           const targetId = response.action.action?.targetId ?? null
           memory.lastAction = response.action.plan
           lastSeerTargetRef.current = targetId
+
+          if (targetId !== null) {
+            const target = context.state.players.find(p => p.id === targetId)
+            if (target) {
+              const result = target.role === 'Werewolf' ? '是狼人' : '是好人'
+              memory.knownRoles[targetId] = target.role
+              memory.notes.push(`第${context.day + 1}夜查验 #${targetId} ${target.name}：${result}`)
+            }
+          }
+
           const speech = response.action.speech?.trim() || '（谨慎观察）'
           pushLogEntries([
             {
@@ -529,19 +539,8 @@ export function useAiOrchestrator() {
           return offlineWitchDecision(context)
         }
       },
-      onDayStart: async (context: DayContext) => {
-        if (lastSeerTargetRef.current !== null) {
-          const seer = context.state.players.find((player) => player.role === 'Seer')
-          if (seer) {
-            const memory = ensureMemory(memoryRef.current, seer.id)
-            const target = context.state.players.find((player) => player.id === lastSeerTargetRef.current)
-            if (target) {
-              memory.knownRoles[target.id] = target.role
-              memory.notes.push(`确认座位 #${target.id} 的身份：${target.role}`)
-            }
-          }
-          lastSeerTargetRef.current = null
-        }
+      onDayStart: async () => {
+        lastSeerTargetRef.current = null
       },
       onDiscussion: async (context: DayContext): Promise<DiscussionEvent[]> => {
         if (!aiStatusRef.current.enabled) {

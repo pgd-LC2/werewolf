@@ -43,9 +43,13 @@ function formatLatestHighlight(state: GameState) {
   return entries[entries.length - 1]
 }
 
-function formatSpeeches(previous: DiscussionEvent[]) {
+function formatSpeeches(previous: DiscussionEvent[], state: GameState) {
   if (!previous.length) return '尚无人发言'
-  return previous.map((item) => `#${item.speakerId}：${item.speech}`).join('\n')
+  return previous.map((item) => {
+    const speaker = state.players.find(p => p.id === item.speakerId)
+    const name = speaker ? speaker.name : '未知'
+    return `#${item.speakerId} ${name}：${item.speech}`
+  }).join('\n')
 }
 
 export function buildWerewolfPrompt(
@@ -158,7 +162,7 @@ export function buildDiscussionPrompt(
 ): StagePrompt {
   const visibleList = context.alivePlayers.map((player) => formatPlayerLine(player, false)).join('\n')
   const known = formatKnownRoles(memory)
-  const speeches = formatSpeeches(previousSpeeches)
+  const speeches = formatSpeeches(previousSpeeches, context.state)
   const recent = formatRecentLog(context.state.gameLog)
   const latestHighlight = formatLatestHighlight(context.state)
   const lastSpeech = memory.lastSpeech ?? '尚未发言'
