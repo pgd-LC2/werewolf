@@ -23,3 +23,4 @@ openrouterkey.txt
 *.njsproj
 *.sln
 *.sw?
+.env
