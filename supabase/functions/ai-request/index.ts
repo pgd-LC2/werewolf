@@ -128,12 +128,25 @@ Deno.serve(async (req: Request) => {
     const isClaudeModel = model.toLowerCase().includes('claude');
     const isAnthropicProvider = model.toLowerCase().startsWith('anthropic/');
 
+    // 检测是否为支持 extended thinking 的 Claude 4.x 模型
+    const isClaude4Extended =
+      model.includes('claude-sonnet-4.5') ||
+      model.includes('claude-opus-4');
+
     // 为Claude模型构建请求体
     const requestPayload: Record<string, unknown> = {
       model,
       temperature,
       messages,
     };
+
+    // Claude 4.x 模型支持 extended thinking
+    if (isClaude4Extended) {
+      console.log(`Detected Claude 4.x model with extended thinking: ${model}`);
+      requestPayload.reasoning = {
+        effort: 'high'
+      };
+    }
 
     // Claude模型需要使用结构化输出参数
     if (isClaudeModel || isAnthropicProvider) {
