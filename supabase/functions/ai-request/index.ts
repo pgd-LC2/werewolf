@@ -268,14 +268,32 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // 如果content包含```json代码块，提取其中的JSON
+    let jsonContent = content;
+    if (content.includes('```json')) {
+      console.log("Detected JSON code block in content, extracting...");
+      const startMarker = '```json';
+      const endMarker = '```';
+      const startIndex = content.indexOf(startMarker);
+      if (startIndex !== -1) {
+        const jsonStart = startIndex + startMarker.length;
+        const endIndex = content.indexOf(endMarker, jsonStart);
+        if (endIndex !== -1) {
+          jsonContent = content.substring(jsonStart, endIndex).trim();
+          console.log("Successfully extracted JSON from code block");
+        }
+      }
+    }
+
     let parsed: AiAction;
     try {
-      parsed = JSON.parse(content) as AiAction;
+      parsed = JSON.parse(jsonContent) as AiAction;
     } catch (error) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "OpenRouter response is not valid JSON",
-          content,
+          content: jsonContent,
+          originalContent: content !== jsonContent ? content : undefined,
           parseError: error instanceof Error ? error.message : String(error)
         }),
         {
