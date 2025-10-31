@@ -38,6 +38,7 @@ export function useAiAgents() {
         try {
           if (attempt > 1) {
             setAgentState(playerId, { loading: true, retryCount: attempt - 1 })
+            console.log(`[AI Agent] #${playerId} 开始第 ${attempt} 次重试...`)
           }
 
           const history = aiContextManager.prepareStage(playerId, stage, stagePrompt)
@@ -61,16 +62,30 @@ export function useAiAgents() {
           setAgentState(playerId, { loading: false, lastResponse: response, retryCount: 0 })
 
           if (attempt > 1) {
-            console.log(`[AI Agent] 重试成功！第 ${attempt} 次尝试`)
+            console.log(`[AI Agent] #${playerId} 重试成功！第 ${attempt} 次尝试成功`)
           }
           return response
         } catch (error) {
           lastError = error instanceof Error ? error : new Error('未知错误')
-          console.warn(`[AI Agent] #${playerId} 尝试 ${attempt}/${maxRetries} 失败:`, lastError.message)
+          const errorMsg = lastError.message
+
+          // 提取错误类型
+          const is503 = errorMsg.includes('503') || errorMsg.includes('Service Unavailable')
+          const is502 = errorMsg.includes('502') || errorMsg.includes('Bad Gateway')
+          const isNoInstance = errorMsg.includes('No instances available')
+
+          let errorType = '未知错误'
+          if (is503 || isNoInstance) {
+            errorType = '服务暂时不可用'
+          } else if (is502) {
+            errorType = '网关错误'
+          }
+
+          console.warn(`[AI Agent] #${playerId} 尝试 ${attempt}/${maxRetries} 失败 (${errorType}):`, errorMsg)
 
           if (attempt < maxRetries) {
             const delayMs = 1000 * attempt
-            console.log(`[AI Agent] #${playerId} 等待 ${delayMs}ms 后重试...`)
+            console.log(`[AI Agent] #${playerId} 将在 ${delayMs}ms 后重试...`)
             await new Promise(resolve => setTimeout(resolve, delayMs))
           }
         }

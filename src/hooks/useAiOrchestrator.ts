@@ -97,7 +97,16 @@ export function useAiOrchestrator() {
       aiStatusRef.current = nextStatus
       setAiStatus(nextStatus)
       console.warn('[AI orchestrator] engine disabled:', reason, error)
-      ensureOfflineNotice(reason, detail)
+
+      // 检查是否是503错误（服务不可用）
+      const is503Error = detail?.includes('503') || detail?.includes('Service Unavailable')
+      const isNoInstanceError = detail?.includes('No instances available')
+
+      if (is503Error || isNoInstanceError) {
+        ensureOfflineNotice(reason, '当前模型暂时不可用，建议切换到其他AI模型后重试')
+      } else {
+        ensureOfflineNotice(reason, detail)
+      }
     },
     [ensureOfflineNotice]
   )
