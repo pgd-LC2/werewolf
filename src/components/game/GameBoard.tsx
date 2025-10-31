@@ -514,7 +514,6 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
         if (!selectedPlayer || !aiPanel) return null
 
         const isLoading = agentState?.loading || false
-        const isStaleData = !isLoading && agentState?.lastResponse
 
         return (
           <div
@@ -540,8 +539,8 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
                   <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
                     {selectedPlayer.role} · {formatPlayerStatus(selectedPlayer.isAlive)}
                   </p>
-                  {isStaleData && (
-                    <p className='mt-2 inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600 dark:bg-red-900/30 dark:text-red-400'>
+                  {isLoading && agentState?.lastResponse && (
+                    <p className='mt-2 inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600 animate-pulse dark:bg-red-900/30 dark:text-red-400'>
                       上一次返回
                     </p>
                   )}
