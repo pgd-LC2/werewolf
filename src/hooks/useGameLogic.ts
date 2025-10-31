@@ -23,6 +23,14 @@ const ROLE_POOL: Role[] = [
   'Villager' // 自由身份位，默认视为村民
 ]
 
+const ROLE_NAMES: Record<Role, string> = {
+  'Werewolf': '狼人',
+  'Villager': '村民',
+  'Seer': '预言家',
+  'Witch': '女巫',
+  'Hunter': '猎人'
+}
+
 const initialState: GameState = createInitialGameState()
 
 export interface LogEntryPayload {
@@ -265,7 +273,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
       let hunterPending = state.hunterPending
 
-      deathIds.forEach((id) => {
+      deathIds.forEach((id, index) => {
         const target = players.find((player) => player.id === id)
         if (target && target.isAlive) {
           target.isAlive = false
@@ -276,6 +284,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
               nextPhase: 'Day'
             }
           }
+          // 死亡时公开身份
+          const roleName = ROLE_NAMES[target.role]
+          const deathMessage = `#${target.id} ${target.name} 的身份是：${roleName}`
+          entries.push({
+            message: deathMessage,
+            replay: {
+              id: `death-reveal-${target.id}-${timestampBase + index}`,
+              phase: 'Night',
+              category: 'system',
+              day: state.day,
+              actorId: target.id,
+              content: deathMessage,
+              extra: { role: target.role },
+              timestamp: timestampBase + 100 + index
+            },
+            highlight: deathMessage
+          })
         }
       })
 
@@ -486,6 +511,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             },
             highlight: message
           })
+          // 出局时公开身份
+          const roleName = ROLE_NAMES[eliminatedPlayer.role]
+          const revealMessage = `#${eliminatedPlayer.id} ${eliminatedPlayer.name} 的身份是：${roleName}`
+          entries.push({
+            message: revealMessage,
+            replay: {
+              id: `vote-reveal-${eliminatedPlayer.id}-${state.day}-${timestampBase}`,
+              phase: 'Voting',
+              category: 'system',
+              day: state.day,
+              actorId: eliminatedPlayer.id,
+              content: revealMessage,
+              extra: { role: eliminatedPlayer.role },
+              timestamp: timestampBase + 2
+            },
+            highlight: revealMessage
+          })
           if (eliminatedPlayer.role === 'Hunter') {
             hunterPending = {
               playerId: eliminatedPlayer.id,
@@ -622,6 +664,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
               timestamp: timestampBase
             },
             highlight: message
+          })
+          // 被猎人击杀时公开身份
+          const roleName = ROLE_NAMES[target.role]
+          const revealMessage = `#${target.id} ${target.name} 的身份是：${roleName}`
+          entries.push({
+            message: revealMessage,
+            replay: {
+              id: `hunter-reveal-${target.id}-${timestampBase}`,
+              phase: 'HunterAction',
+              category: 'system',
+              day: state.day,
+              actorId: target.id,
+              content: revealMessage,
+              extra: { role: target.role },
+              timestamp: timestampBase + 1
+            },
+            highlight: revealMessage
           })
         } else {
           const message = '猎人试图带走的目标不存在或已死亡。'
