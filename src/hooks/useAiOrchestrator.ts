@@ -333,14 +333,16 @@ export function useAiOrchestrator() {
             responses.push({ player: wolf, decision, confidence: response.action.confidence })
             const speech = response.action.speech?.trim() || response.action.plan || '（保持沉默）'
 
+            // 狼人的发言是给队友的内部讨论，不应该被记录到公开日志
+            // 只记录到 replay 中用于复盘
             pushLogEntries([{
-              message: `狼人 #${wolf.id} ${wolf.name}：${speech}`,
+              message: '', // 不记录到公开日志
               replay: buildReplayEvent(
                 'WerewolfAction',
                 'decision',
                 context.day + 1,
                 wolf,
-                speech,
+                `狼人 #${wolf.id} ${wolf.name}：${speech}`,
                 response.thinking ?? null,
                 {
                   plan: response.action.plan,
@@ -416,15 +418,17 @@ export function useAiOrchestrator() {
           }
 
           const speech = response.action.speech?.trim() || '（谨慎观察）'
+          // 预言家的发言是内心独白，不应该被记录到公开日志
+          // 只记录到 replay 中用于复盘
           pushLogEntries([
             {
-              message: `预言家 #${seer.id} ${seer.name}：${speech}`,
+              message: '', // 不记录到公开日志
               replay: buildReplayEvent(
                 'SeerAction',
                 'decision',
                 context.day + 1,
                 seer,
-                speech,
+                `预言家 #${seer.id} ${seer.name}：${speech}`,
                 response.thinking ?? null,
                 {
                   plan: response.action.plan,
@@ -436,13 +440,13 @@ export function useAiOrchestrator() {
           if (targetId !== null) {
             pushLogEntries([
               {
-                message: `预言家准备查验座位 #${targetId}。`,
+                message: '', // 不记录到公开日志
                 replay: buildReplayEvent(
                   'SeerAction',
                   'action',
                   context.day + 1,
                   seer,
-                  `查验目标 #${targetId}`,
+                  `预言家准备查验座位 #${targetId}`,
                   null,
                   { targetId }
                 )
@@ -494,15 +498,17 @@ export function useAiOrchestrator() {
           }
 
           const speech = response.action.speech?.trim() || response.action.plan || '（女巫暂不表态）'
+          // 女巫的发言是内心独白，不应该被记录到公开日志
+          // 只记录到 replay 中用于复盘
           pushLogEntries([
             {
-              message: `女巫 #${witch.id} ${witch.name}：${speech}`,
+              message: '', // 不记录到公开日志
               replay: buildReplayEvent(
                 'WitchAction',
                 'decision',
                 context.day + 1,
                 witch,
-                speech,
+                `女巫 #${witch.id} ${witch.name}：${speech}`,
                 response.thinking ?? null,
                 {
                   plan: response.action.plan,
@@ -694,15 +700,17 @@ export function useAiOrchestrator() {
           memory.lastAction = response.action.plan
 
           const speech = response.action.speech?.trim() || response.action.plan || '（猎人沉默）'
+          // 猎人的内心想法不应该被记录到公开日志
+          // 只记录到 replay 中用于复盘
           pushLogEntries([
             {
-              message: `猎人 #${hunter.id} ${hunter.name}：${speech}`,
+              message: '', // 不记录到公开日志
               replay: buildReplayEvent(
                 'HunterAction',
                 'decision',
                 context.state.day,
                 hunter,
-                speech,
+                `猎人 #${hunter.id} ${hunter.name}：${speech}`,
                 response.thinking ?? null,
                 { plan: response.action.plan }
               )
