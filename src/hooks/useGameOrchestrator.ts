@@ -402,11 +402,14 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
 
   const runPostVoteDiscussionSequence = useCallback(async () => {
     const MAX_ROUNDS = 3
-    const context = getContext()
 
     console.log('[票后分析] 收集投票结果')
     logic.collectVoteSummary()
+    await waitForTempo()
     await sleep(0)
+
+    // 在收集 voteSummary 后重新获取 context
+    const context = getContext()
 
     console.log('[票后分析] 开始第1轮强制发言')
     logic.startPostVoteDiscussion()
@@ -487,14 +490,13 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
     })
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    console.log('[白天序列] 结算投票结果（生成 voteSummary）')
-    logic.resolveVoting()
-    await waitForTempo()
-    await sleep(0)
-
-    console.log('[白天序列] 进入票后分析阶段')
+    console.log('[白天序列] 进入票后分析阶段（会生成 voteSummary）')
     await runPostVoteDiscussionSequence()
     await new Promise(resolve => setTimeout(resolve, 500))
+
+    console.log('[白天序列] 结算投票结果（淘汰玩家）')
+    logic.resolveVoting()
+    await waitForTempo()
     await sleep(0)
     if (stateRef.current.phase === 'HunterAction') {
       console.log('[白天序列] 猎人技能触发')
