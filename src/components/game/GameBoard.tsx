@@ -3,6 +3,7 @@ import { PauseCircle, PlayCircle, Zap, X } from 'lucide-react'
 import { useAiOrchestrator } from '../../hooks/useAiOrchestrator'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
+import { AI_MODELS } from '../../lib/constants'
 
 const DEFAULT_NAMES = ['月影', '霜狐', '长夜', '林风', '墨砚', '晨曦', '远山', '流萤', '青禾', '星潮']
 
@@ -39,7 +40,9 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
     resetAllAgents,
     tempo,
     agentStates,
-    aiStatus
+    aiStatus,
+    selectedModel,
+    setSelectedModel
   } = orchestrator
 
   const { paused, pause, resume } = tempo
@@ -316,6 +319,53 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
           </section>
 
           <aside className='space-y-4'>
+          <div className='space-y-3 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-4 text-sm dark:border-indigo-900/50 dark:bg-indigo-950/20'>
+            <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>
+              AI 模型
+            </p>
+            <select
+              className='w-full rounded-2xl border border-indigo-200/60 bg-white/60 p-3 text-sm outline-none transition focus-visible:border-moon focus-visible:ring-2 focus-visible:ring-moon/30 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-slate-100'
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+            >
+              {AI_MODELS.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name} ({model.provider})
+                </option>
+              ))}
+            </select>
+            {(() => {
+              const current = AI_MODELS.find((m) => m.id === selectedModel)
+              if (!current) return null
+
+              const costColors = {
+                low: 'text-green-600 dark:text-green-400',
+                medium: 'text-amber-600 dark:text-amber-400',
+                high: 'text-red-600 dark:text-red-400'
+              }
+
+              const costLabels = {
+                low: '低成本',
+                medium: '中等成本',
+                high: '高成本'
+              }
+
+              return (
+                <div className='space-y-1.5'>
+                  <p className='text-xs text-gray-600 dark:text-gray-300'>{current.description}</p>
+                  <div className='flex items-center gap-3 text-xs'>
+                    <span className='rounded-full bg-indigo-100 px-2.5 py-1 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'>
+                      上下文: {current.contextWindow}
+                    </span>
+                    <span className={cn('rounded-full px-2.5 py-1 font-medium', costColors[current.costLevel])}>
+                      {costLabels[current.costLevel]}
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+
           <div className='space-y-2 rounded-3xl border border-indigo-200/50 bg-indigo-50/30 p-4 text-sm dark:border-indigo-900/50 dark:bg-indigo-950/20'>
             <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-300'>
               玩家昵称

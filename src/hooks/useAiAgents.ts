@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { aiContextManager } from '../lib/aiContext'
+import { DEFAULT_AI_MODEL } from '../lib/constants'
 import type { AiResponse, ChatCompletionMessageParam } from '../lib/openrouterClient'
 import { requestAiAction } from '../lib/openrouterClient'
 
@@ -10,10 +11,9 @@ export interface AiAgentState {
   retryCount?: number
 }
 
-const DEFAULT_MODEL = 'minimax/minimax-m2'
-
 export function useAiAgents() {
   const [states, setStates] = useState<Record<number, AiAgentState>>({})
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_AI_MODEL)
 
   const setAgentState = useCallback((playerId: number, partial: Partial<AiAgentState>) => {
     setStates((prev) => ({
@@ -47,7 +47,7 @@ export function useAiAgents() {
           }
           const requestMessages = [...history, userMessage]
           const response = await requestAiAction({
-            model: options?.model ?? DEFAULT_MODEL,
+            model: options?.model ?? selectedModel,
             messages: requestMessages
           })
           aiContextManager.append(playerId, [
@@ -100,6 +100,8 @@ export function useAiAgents() {
   return {
     agentStates,
     invokeAgent,
-    resetAgent
+    resetAgent,
+    selectedModel,
+    setSelectedModel
   }
 }

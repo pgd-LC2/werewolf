@@ -51,7 +51,7 @@ const OFFLINE_DISCUSSION_TEMPLATES = [
 ]
 
 export function useAiOrchestrator() {
-  const { agentStates, invokeAgent, resetAgent } = useAiAgents()
+  const { agentStates, invokeAgent, resetAgent, selectedModel, setSelectedModel } = useAiAgents()
   const appendLogRef = useRef<(entry: LogEntryPayload) => void>(() => {})
   const appendLogsRef = useRef<(entries: LogEntryPayload[]) => void>(() => {})
   const memoryRef = useRef(new Map<number, AiPlayerMemory>())
@@ -776,6 +776,8 @@ export function useAiOrchestrator() {
     ...orchestrator,
     agentStates,
     aiStatus,
+    selectedModel,
+    setSelectedModel,
     resetAllAgents: () => {
       for (const key of memoryRef.current.keys()) {
         resetAgent(key)

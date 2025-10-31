@@ -106,3 +106,81 @@ export const labNotes = [
     meta: '误操作下降'
   }
 ]
+
+export interface AiModelOption {
+  id: string
+  name: string
+  provider: string
+  description: string
+  contextWindow: string
+  costLevel: 'low' | 'medium' | 'high'
+}
+
+export const AI_MODELS: AiModelOption[] = [
+  {
+    id: 'minimax/minimax-m2',
+    name: 'MiniMax M2',
+    provider: 'MiniMax',
+    description: '高性价比的中文对话模型',
+    contextWindow: '32K',
+    costLevel: 'low'
+  },
+  {
+    id: 'anthropic/claude-sonnet-4.5',
+    name: 'Claude Sonnet 4.5',
+    provider: 'Anthropic',
+    description: '平衡性能与成本的Claude模型',
+    contextWindow: '200K',
+    costLevel: 'medium'
+  },
+  {
+    id: 'anthropic/claude-3.5-sonnet',
+    name: 'Claude 3.5 Sonnet',
+    provider: 'Anthropic',
+    description: 'Claude 3.5系列的核心模型',
+    contextWindow: '200K',
+    costLevel: 'medium'
+  },
+  {
+    id: 'anthropic/claude-opus-4',
+    name: 'Claude Opus 4',
+    provider: 'Anthropic',
+    description: '最强大的Claude模型',
+    contextWindow: '200K',
+    costLevel: 'high'
+  },
+  {
+    id: 'openai/gpt-4o',
+    name: 'GPT-4o',
+    provider: 'OpenAI',
+    description: 'OpenAI的多模态旗舰模型',
+    contextWindow: '128K',
+    costLevel: 'medium'
+  },
+  {
+    id: 'openai/gpt-4-turbo',
+    name: 'GPT-4 Turbo',
+    provider: 'OpenAI',
+    description: '更快速的GPT-4版本',
+    contextWindow: '128K',
+    costLevel: 'medium'
+  },
+  {
+    id: 'google/gemini-pro-1.5',
+    name: 'Gemini Pro 1.5',
+    provider: 'Google',
+    description: 'Google的先进AI模型',
+    contextWindow: '2M',
+    costLevel: 'medium'
+  },
+  {
+    id: 'deepseek/deepseek-chat',
+    name: 'DeepSeek Chat',
+    provider: 'DeepSeek',
+    description: '国产高性价比模型',
+    contextWindow: '64K',
+    costLevel: 'low'
+  }
+]
+
+export const DEFAULT_AI_MODEL = 'minimax/minimax-m2'
