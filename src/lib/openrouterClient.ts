@@ -39,6 +39,8 @@ export interface AiStructuredAction {
   type: string
   targetId?: number | null
   notes?: string
+  wantsContinue?: boolean
+  hasFollowUp?: boolean
 }
 
 export interface AiAction {

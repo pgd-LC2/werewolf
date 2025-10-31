@@ -8,6 +8,8 @@ type StageKey =
   | 'night-witch'
   | 'day-discussion'
   | 'day-voting'
+  | 'post-vote-discussion'
+  | 'post-vote-followup'
   | 'hunter-action'
 
 export interface StagePrompt {
@@ -261,6 +263,119 @@ ${latestHighlight}
 
   return {
     stage: 'hunter-action',
+    systemPrompt,
+    userPrompt
+  }
+}
+
+export function buildPostVoteDiscussionPrompt(
+  profile: AiPlayerProfile,
+  context: DayContext,
+  memory: AiPlayerMemory,
+  voteSummary: { voteCounts: Record<number, number>; exiledPlayerId: number | null; isTie: boolean; votes: { voterId: number; targetId: number }[] },
+  previousSpeeches: DiscussionEvent[],
+  round: number
+): StagePrompt {
+  const visibleList = context.alivePlayers.map((player) => formatPlayerLine(player, false)).join('\n')
+  const known = formatKnownRoles(memory)
+  const recent = formatRecentLog(context.state.gameLog)
+  const lastSpeech = memory.lastSpeech ?? '尚未发言'
+
+  const voteCountLines = Object.entries(voteSummary.voteCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([playerId, count]) => {
+      const player = context.state.players.find(p => p.id === Number(playerId))
+      return `  #${playerId} ${player?.name ?? '未知'} 获得 ${count} 票`
+    })
+    .join('\n')
+
+  const voteDetailLines = voteSummary.votes
+    .map(v => {
+      const voter = context.state.players.find(p => p.id === v.voterId)
+      const target = context.state.players.find(p => p.id === v.targetId)
+      return `  #${v.voterId} ${voter?.name ?? '未知'} → #${v.targetId} ${target?.name ?? '未知'}`
+    })
+    .join('\n')
+
+  const exiledInfo = voteSummary.exiledPlayerId
+    ? `被放逐者：#${voteSummary.exiledPlayerId} ${context.state.players.find(p => p.id === voteSummary.exiledPlayerId)?.name ?? '未知'}`
+    : voteSummary.isTie
+      ? '平票，无人出局'
+      : '无人出局'
+
+  const roundSuffix = round > 1 ? `（第${round}轮）` : ''
+  const speeches = formatSpeeches(previousSpeeches, context.state)
+  const speechContext = previousSpeeches.length > 0
+    ? `\n本轮其他人的发言：\n${speeches}`
+    : ''
+
+  const systemPrompt = `阶段：票后分析${roundSuffix}
+你是座位 #${profile.player.id} 的 ${profile.player.role}，刚刚完成投票。现在需要分析票型并给出评价。${JSON_INSTRUCTION}`
+
+  const userPrompt = `当前天数：第 ${context.day} 天
+存活玩家：
+${visibleList}
+已确认身份：
+${known}
+你最近一次发言：${lastSpeech}
+
+【投票结果】
+${exiledInfo}
+票数统计：
+${voteCountLines}
+详细票型：
+${voteDetailLines}${speechContext}
+
+最近日志：
+${recent}
+
+请在 action.type 中返回 "post_vote_analysis"。
+在 speech 中分析票型（如归票趋势、异常投票、票数分布），并表明立场。
+在 action.wantsContinue 中返回 true（希望继续讨论）或 false（无需继续）。
+在 action.notes 中记录你的分析要点。`
+
+  return {
+    stage: 'post-vote-discussion',
+    systemPrompt,
+    userPrompt
+  }
+}
+
+export function buildPostVoteFollowUpPrompt(
+  profile: AiPlayerProfile,
+  context: DayContext,
+  memory: AiPlayerMemory,
+  allPreviousSpeeches: DiscussionEvent[],
+  round: number
+): StagePrompt {
+  const visibleList = context.alivePlayers.map((player) => formatPlayerLine(player, false)).join('\n')
+  const known = formatKnownRoles(memory)
+  const speeches = formatSpeeches(allPreviousSpeeches, context.state)
+
+  const systemPrompt = `阶段：票后分析 · 第${round}轮补充
+你是座位 #${profile.player.id} 的 ${profile.player.role}。听完其他人的票后分析，决定是否需要补充发言。${JSON_INSTRUCTION}`
+
+  const userPrompt = `当前天数：第 ${context.day} 天
+存活玩家：
+${visibleList}
+已确认身份：
+${known}
+
+【本轮所有人的分析】
+${speeches}
+
+判断标准：
+- 是否有人质疑了你？
+- 是否发现了新的逻辑漏洞或矛盾？
+- 是否需要澄清或回应某些观点？
+- 是否有重要信息需要补充？
+
+请在 action.type 中返回 "follow_up"。
+在 action.hasFollowUp 中返回 true（需要补充）或 false（不需要）。
+如果需要补充，在 speech 中写出你的回应；否则留空即可。`
+
+  return {
+    stage: 'post-vote-followup',
     systemPrompt,
     userPrompt
   }

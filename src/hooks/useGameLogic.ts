@@ -6,7 +6,8 @@ import {
   type Player,
   type Role,
   type Winner,
-  type ReplayEvent
+  type ReplayEvent,
+  type VoteSummary
 } from '../lib/game'
 
 const ROLE_POOL: Role[] = [
@@ -37,6 +38,9 @@ type GameAction =
   | { type: 'SEER_ACTION'; payload: { targetId: number | null } }
   | { type: 'WITCH_ACTION'; payload: { action: 'save' } | { action: 'poison'; targetId: number } }
   | { type: 'PLAYER_VOTE'; payload: { voterId: number; targetId: number } }
+  | { type: 'COLLECT_VOTE_SUMMARY' }
+  | { type: 'START_POST_VOTE_DISCUSSION' }
+  | { type: 'INCREMENT_POST_VOTE_ROUND' }
   | { type: 'RESOLVE_NIGHT' }
   | { type: 'RESOLVE_VOTING' }
   | { type: 'HUNTER_SHOOT'; payload: { targetId: number | null } }
@@ -731,6 +735,51 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         highlights: [...action.payload.highlights]
       }
     }
+    case 'COLLECT_VOTE_SUMMARY': {
+      const tally = state.votes.reduce<Record<number, number>>((acc, vote) => {
+        if (vote.targetId !== null) {
+          acc[vote.targetId] = (acc[vote.targetId] ?? 0) + 1
+        }
+        return acc
+      }, {})
+
+      const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1])
+      let exiledPlayerId: number | null = null
+      let isTie = false
+
+      if (sorted.length) {
+        const [topTarget, topCount] = sorted[0]
+        isTie = sorted.length > 1 && sorted[1][1] === topCount
+        if (!isTie) {
+          exiledPlayerId = Number(topTarget)
+        }
+      }
+
+      const voteSummary: VoteSummary = {
+        votes: state.votes.map(v => ({ voterId: v.voterId, targetId: v.targetId })),
+        voteCounts: tally,
+        exiledPlayerId,
+        isTie
+      }
+
+      return {
+        ...state,
+        voteSummary
+      }
+    }
+    case 'START_POST_VOTE_DISCUSSION': {
+      return {
+        ...state,
+        phase: 'PostVoteDiscussion',
+        postVoteRound: 1
+      }
+    }
+    case 'INCREMENT_POST_VOTE_ROUND': {
+      return {
+        ...state,
+        postVoteRound: state.postVoteRound + 1
+      }
+    }
     default:
       return state
   }
@@ -807,6 +856,12 @@ export function useGameLogic() {
     [dispatch]
   )
 
+  const collectVoteSummary = useCallback(() => dispatch({ type: 'COLLECT_VOTE_SUMMARY' }), [dispatch])
+
+  const startPostVoteDiscussion = useCallback(() => dispatch({ type: 'START_POST_VOTE_DISCUSSION' }), [dispatch])
+
+  const incrementPostVoteRound = useCallback(() => dispatch({ type: 'INCREMENT_POST_VOTE_ROUND' }), [dispatch])
+
   return {
     state,
     startGame,
@@ -821,6 +876,9 @@ export function useGameLogic() {
     hunterShoot,
     appendLog,
     appendLogs,
-    setHighlights
+    setHighlights,
+    collectVoteSummary,
+    startPostVoteDiscussion,
+    incrementPostVoteRound
   }
 }

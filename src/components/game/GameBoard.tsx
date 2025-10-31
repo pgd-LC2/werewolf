@@ -16,12 +16,13 @@ const PHASE_LABELS: Record<string, string> = {
   Day: '清晨醒来',
   Discussion: '讨论阶段',
   Voting: '投票阶段',
+  PostVoteDiscussion: '票后分析',
   HunterAction: '猎人行动',
   GameOver: '游戏结束'
 }
 
 const NIGHT_PHASES = new Set(['Night', 'WerewolfAction', 'SeerAction', 'WitchAction'])
-const DAY_PHASES = new Set(['Day', 'Discussion', 'Voting'])
+const DAY_PHASES = new Set(['Day', 'Discussion', 'Voting', 'PostVoteDiscussion'])
 
 function getPhaseLabel(phase: string) {
   return PHASE_LABELS[phase] ?? phase
@@ -54,7 +55,10 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
 
   const players = state.players
   const alivePlayers = players.filter((player) => player.isAlive)
-  const phaseLabel = getPhaseLabel(state.phase)
+  const basePhaseLabel = getPhaseLabel(state.phase)
+  const phaseLabel = state.phase === 'PostVoteDiscussion' && state.postVoteRound > 0
+    ? `${basePhaseLabel} · 第${state.postVoteRound}轮`
+    : basePhaseLabel
   const isNightPhase = NIGHT_PHASES.has(state.phase)
   const isDayPhase = DAY_PHASES.has(state.phase)
 

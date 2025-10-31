@@ -6,6 +6,8 @@ import type {
   HunterDecision,
   NightContext,
   OrchestratorHandlers,
+  PostVoteDiscussionEvent,
+  PostVoteFollowUpEvent,
   SeerDecision,
   VotingDecision,
   WerewolfDecision,
@@ -17,6 +19,8 @@ import { buildPlayerProfile, createAiMemory, type AiPlayerMemory } from '../lib/
 import {
   buildDiscussionPrompt,
   buildHunterPrompt,
+  buildPostVoteDiscussionPrompt,
+  buildPostVoteFollowUpPrompt,
   buildSeerPrompt,
   buildVotingPrompt,
   buildWerewolfPrompt,
@@ -48,6 +52,13 @@ const OFFLINE_DISCUSSION_TEMPLATES = [
   '关注票型，不要轻易把放逐票交给沉默位。',
   '优先排查昨晚无行动的玩家，防止狼人混入视线。',
   '请大家报出夜间情报，信息透明更利于推理。'
+]
+
+const OFFLINE_POST_VOTE_TEMPLATES = [
+  '从票型看，归票趋势值得关注。',
+  '投票相对集中，说明场上信息较为透明。',
+  '票散的情况下，明天需要重点关注归票逻辑。',
+  '被放逐者的发言值得回顾分析。'
 ]
 
 export function useAiOrchestrator() {
@@ -292,6 +303,46 @@ export function useAiOrchestrator() {
       return { targetId: null }
     },
     [buildReplayEvent, ensureOfflineForCurrentStatus, pushLogEntries]
+  )
+
+  const offlinePostVoteDiscussion = useCallback(
+    (context: DayContext, round: number): PostVoteDiscussionEvent[] => {
+      ensureOfflineForCurrentStatus()
+      const events: PostVoteDiscussionEvent[] = []
+      const entries: LogEntryPayload[] = []
+
+      context.alivePlayers.forEach((player, index) => {
+        const template = OFFLINE_POST_VOTE_TEMPLATES[index % OFFLINE_POST_VOTE_TEMPLATES.length]
+        const speechText = `【默认分析】${template}`
+        const wantsContinue = false
+
+        events.push({
+          speakerId: player.id,
+          speech: speechText,
+          wantsContinue
+        })
+
+        entries.push({
+          message: `【票后分析 · 第${round}轮】#${player.id} ${player.name}：${speechText}`,
+          replay: buildReplayEvent('PostVoteDiscussion', 'speech', context.day, player, speechText, null, {
+            fallback: true,
+            round
+          })
+        })
+      })
+
+      pushLogEntries(entries)
+      return events
+    },
+    [buildReplayEvent, ensureOfflineForCurrentStatus, pushLogEntries]
+  )
+
+  const offlinePostVoteFollowUp = useCallback(
+    (): PostVoteFollowUpEvent[] => {
+      ensureOfflineForCurrentStatus()
+      return []
+    },
+    [ensureOfflineForCurrentStatus]
   )
 
   const waitIfPaused = useCallback(async () => {
@@ -766,6 +817,133 @@ export function useAiOrchestrator() {
           return offlineHunterDecision(context)
         }
       },
+      onPostVoteDiscussion: async (context: DayContext, round: number): Promise<PostVoteDiscussionEvent[]> => {
+        if (!aiStatusRef.current.enabled || !context.state.voteSummary) {
+          return offlinePostVoteDiscussion(context, round)
+        }
+
+        const events: PostVoteDiscussionEvent[] = []
+        const alivePlayers = context.alivePlayers
+
+        for (let i = 0; i < alivePlayers.length; i++) {
+          if (!aiStatusRef.current.enabled) {
+            const remaining = alivePlayers.slice(i)
+            const offlineEvents = remaining.map(p => ({
+              speakerId: p.id,
+              speech: '【默认】票型分析中...',
+              wantsContinue: false
+            }))
+            events.push(...offlineEvents)
+            break
+          }
+
+          await waitIfPaused()
+          const player = alivePlayers[i]
+          const memory = ensureMemory(memoryRef.current, player.id)
+          const profile = buildPlayerProfile(context.state, player, memory)
+          const prompt = buildPostVoteDiscussionPrompt(profile, context, memory, context.state.voteSummary, events, round)
+
+          try {
+            const response = await invokeAgent(player.id, prompt.stage, prompt.systemPrompt, prompt.userPrompt)
+            const speech = response.action.speech?.trim() || '（暂不评价）'
+            const wantsContinue = response.action.action?.wantsContinue ?? false
+            memory.lastSpeech = speech
+            memory.lastAction = response.action.plan
+
+            events.push({
+              speakerId: player.id,
+              speech,
+              wantsContinue
+            })
+
+            pushLogEntries([{
+              message: `【票后分析 · 第${round}轮】#${player.id} ${player.name}：${speech}`,
+              replay: buildReplayEvent(
+                'PostVoteDiscussion',
+                'speech',
+                context.day,
+                player,
+                speech,
+                response.thinking ?? null,
+                {
+                  plan: response.action.plan,
+                  round,
+                  wantsContinue
+                }
+              )
+            }])
+
+            if (i < alivePlayers.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          } catch (error) {
+            disableAiEngine('request_failed', error)
+            return offlinePostVoteDiscussion(context, round)
+          }
+        }
+
+        return events
+      },
+      onPostVoteFollowUp: async (context: DayContext, round: number, allPreviousSpeeches: DiscussionEvent[]): Promise<PostVoteFollowUpEvent[]> => {
+        if (!aiStatusRef.current.enabled) {
+          return offlinePostVoteFollowUp()
+        }
+
+        const events: PostVoteFollowUpEvent[] = []
+        const alivePlayers = context.alivePlayers
+
+        for (let i = 0; i < alivePlayers.length; i++) {
+          if (!aiStatusRef.current.enabled) {
+            break
+          }
+
+          await waitIfPaused()
+          const player = alivePlayers[i]
+          const memory = ensureMemory(memoryRef.current, player.id)
+          const profile = buildPlayerProfile(context.state, player, memory)
+          const prompt = buildPostVoteFollowUpPrompt(profile, context, memory, allPreviousSpeeches, round)
+
+          try {
+            const response = await invokeAgent(player.id, prompt.stage, prompt.systemPrompt, prompt.userPrompt)
+            const hasFollowUp = response.action.action?.hasFollowUp ?? false
+            const speech = hasFollowUp ? (response.action.speech?.trim() || '') : ''
+
+            events.push({
+              speakerId: player.id,
+              hasFollowUp,
+              speech
+            })
+
+            if (hasFollowUp && speech) {
+              memory.lastSpeech = speech
+              pushLogEntries([{
+                message: `【票后分析 · 第${round}轮补充】#${player.id} ${player.name}：${speech}`,
+                replay: buildReplayEvent(
+                  'PostVoteDiscussion',
+                  'speech',
+                  context.day,
+                  player,
+                  speech,
+                  response.thinking ?? null,
+                  {
+                    round,
+                    followUp: true
+                  }
+                )
+              }])
+            }
+
+            if (i < alivePlayers.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          } catch (error) {
+            disableAiEngine('request_failed', error)
+            return offlinePostVoteFollowUp()
+          }
+        }
+
+        return events
+      },
       onGameOver: () => {
         for (const key of memoryRef.current.keys()) {
           resetAgent(key)
@@ -778,6 +956,8 @@ export function useAiOrchestrator() {
       invokeAgent,
       offlineDiscussion,
       offlineHunterDecision,
+      offlinePostVoteDiscussion,
+      offlinePostVoteFollowUp,
       offlineSeerDecision,
       offlineVoting,
       offlineWerewolfDecision,

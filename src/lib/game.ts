@@ -18,6 +18,7 @@ export type GamePhase =
   | 'Day'
   | 'Discussion'
   | 'Voting'
+  | 'PostVoteDiscussion'
   | 'HunterAction'
   | 'GameOver'
 
@@ -35,6 +36,18 @@ export interface ReplayEvent {
   thinking?: string | null
   extra?: Record<string, unknown>
   timestamp: number
+}
+
+export interface VoteResult {
+  voterId: number
+  targetId: number
+}
+
+export interface VoteSummary {
+  votes: VoteResult[]
+  voteCounts: Record<number, number>
+  exiledPlayerId: number | null
+  isTie: boolean
 }
 
 export type HunterPending =
@@ -59,6 +72,8 @@ export interface GameState {
     savedTargetId: number | null
   }
   votes: { voterId: number; targetId: number }[]
+  voteSummary: VoteSummary | null
+  postVoteRound: number
   hunterPending: HunterPending
   gameLog: string[]
   replay: ReplayEvent[]
@@ -108,6 +123,8 @@ export function createInitialGameState(names?: string[]): GameState {
       savedTargetId: null
     },
     votes: [],
+    voteSummary: null,
+    postVoteRound: 0,
     hunterPending: null,
     gameLog: ['初始状态：等待 Sheriff 竞选。'],
     replay: [],

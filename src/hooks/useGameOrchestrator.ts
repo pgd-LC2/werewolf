@@ -53,6 +53,18 @@ export interface HunterDecision {
   note?: string
 }
 
+export interface PostVoteDiscussionEvent {
+  speakerId: number
+  speech: string
+  wantsContinue: boolean
+}
+
+export interface PostVoteFollowUpEvent {
+  speakerId: number
+  hasFollowUp: boolean
+  speech?: string
+}
+
 export interface OrchestratorHandlers {
   onNightStart?(context: NightContext): Promise<void> | void
   onWerewolfAction?(context: NightContext): Promise<WerewolfDecision> | WerewolfDecision
@@ -61,6 +73,8 @@ export interface OrchestratorHandlers {
   onDayStart?(context: DayContext): Promise<void> | void
   onDiscussion?(context: DayContext): Promise<DiscussionEvent[]> | DiscussionEvent[]
   onVoting?(context: DayContext): Promise<VotingDecision> | VotingDecision
+  onPostVoteDiscussion?(context: DayContext, round: number): Promise<PostVoteDiscussionEvent[]> | PostVoteDiscussionEvent[]
+  onPostVoteFollowUp?(context: DayContext, round: number, allPreviousSpeeches: DiscussionEvent[]): Promise<PostVoteFollowUpEvent[]> | PostVoteFollowUpEvent[]
   onHunterAction?(context: HunterContext): Promise<HunterDecision> | HunterDecision
   onGameOver?(state: GameState): Promise<void> | void
 }
@@ -100,6 +114,18 @@ function fallbackHunter(): HunterDecision {
   return { targetId: null }
 }
 
+function fallbackPostVoteDiscussion(context: DayContext): PostVoteDiscussionEvent[] {
+  return context.alivePlayers.map((player) => ({
+    speakerId: player.id,
+    speech: `${player.name} 沉默观察票型。`,
+    wantsContinue: false
+  }))
+}
+
+function fallbackPostVoteFollowUp(): PostVoteFollowUpEvent[] {
+  return []
+}
+
 const defaultHandlers: Required<OrchestratorHandlers> = {
   onNightStart: noop,
   onWerewolfAction: fallbackWerewolf,
@@ -108,6 +134,8 @@ const defaultHandlers: Required<OrchestratorHandlers> = {
   onDayStart: noop,
   onDiscussion: fallbackDiscussion,
   onVoting: fallbackVoting,
+  onPostVoteDiscussion: fallbackPostVoteDiscussion,
+  onPostVoteFollowUp: fallbackPostVoteFollowUp,
   onHunterAction: fallbackHunter,
   onGameOver: noop
 }
@@ -372,6 +400,68 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
     waitForTempo
   ])
 
+  const runPostVoteDiscussionSequence = useCallback(async () => {
+    const MAX_ROUNDS = 3
+    const context = getContext()
+
+    console.log('[票后分析] 收集投票结果')
+    logic.collectVoteSummary()
+    await sleep(0)
+
+    console.log('[票后分析] 开始第1轮强制发言')
+    logic.startPostVoteDiscussion()
+    await waitForTempo()
+
+    const allSpeeches: DiscussionEvent[] = []
+
+    for (let round = 1; round <= MAX_ROUNDS; round++) {
+      console.log(`[票后分析] 第${round}轮 开始`)
+      await waitWhilePaused()
+
+      if (round === 1) {
+        const events = await safeInvoke(handlers.onPostVoteDiscussion, fallbackPostVoteDiscussion, context, round)
+        events.forEach(e => allSpeeches.push({ speakerId: e.speakerId, speech: e.speech }))
+        const wantsContinueCount = events.filter(e => e.wantsContinue).length
+        console.log(`[票后分析] 第${round}轮结束，${wantsContinueCount}人希望继续`)
+
+        if (wantsContinueCount < 2) {
+          console.log('[票后分析] 希望继续的人数不足，结束讨论')
+          break
+        }
+      } else {
+        const followUpEvents = await safeInvoke(handlers.onPostVoteFollowUp, fallbackPostVoteFollowUp, context, round, allSpeeches)
+        const hasFollowUps = followUpEvents.filter(e => e.hasFollowUp)
+        hasFollowUps.forEach(e => {
+          if (e.speech) {
+            allSpeeches.push({ speakerId: e.speakerId, speech: e.speech })
+          }
+        })
+        console.log(`[票后分析] 第${round}轮结束，${hasFollowUps.length}人补充发言`)
+
+        if (hasFollowUps.length < 2) {
+          console.log('[票后分析] 补充发言人数不足，结束讨论')
+          break
+        }
+      }
+
+      if (round < MAX_ROUNDS) {
+        logic.incrementPostVoteRound()
+        await waitForTempo()
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    }
+
+    console.log('[票后分析] 完成')
+  }, [
+    getContext,
+    handlers.onPostVoteDiscussion,
+    handlers.onPostVoteFollowUp,
+    logic,
+    safeInvoke,
+    waitForTempo,
+    waitWhilePaused
+  ])
+
   const runDaySequence = useCallback(async () => {
     const context = getContext()
 
@@ -397,6 +487,10 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
     })
     await new Promise(resolve => setTimeout(resolve, 500))
 
+    console.log('[白天序列] 进入票后分析阶段')
+    await runPostVoteDiscussionSequence()
+    await new Promise(resolve => setTimeout(resolve, 500))
+
     console.log('[白天序列] 结算投票结果')
     logic.resolveVoting()
     await waitForTempo()
@@ -416,6 +510,7 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
     handlers.onVoting,
     logic,
     runHunterStage,
+    runPostVoteDiscussionSequence,
     safeInvoke,
     waitForTempo
   ])
