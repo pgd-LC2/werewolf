@@ -191,4 +191,4 @@ export const AI_MODELS: AiModelOption[] = [
   }
 ]
 
-export const DEFAULT_AI_MODEL = 'anthropic/claude-3.5-sonnet'
+export const DEFAULT_AI_MODEL = 'deepseek/deepseek-v3.2-exp'
