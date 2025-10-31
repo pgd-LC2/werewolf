@@ -118,36 +118,20 @@ export interface AiModelOption {
 
 export const AI_MODELS: AiModelOption[] = [
   {
-    id: 'minimax/minimax-m2',
-    name: 'MiniMax M2',
-    provider: 'MiniMax',
-    description: '高性价比的中文对话模型',
-    contextWindow: '32K',
-    costLevel: 'low'
+    id: 'anthropic/claude-3.5-sonnet',
+    name: 'Claude 3.5 Sonnet',
+    provider: 'Anthropic',
+    description: 'Claude 3.5系列核心模型（推荐）',
+    contextWindow: '200K',
+    costLevel: 'medium'
   },
   {
     id: 'anthropic/claude-sonnet-4.5',
     name: 'Claude Sonnet 4.5',
     provider: 'Anthropic',
-    description: '平衡性能与成本的Claude模型',
+    description: '最新的平衡性能模型',
     contextWindow: '200K',
     costLevel: 'medium'
-  },
-  {
-    id: 'anthropic/claude-3.5-sonnet',
-    name: 'Claude 3.5 Sonnet',
-    provider: 'Anthropic',
-    description: 'Claude 3.5系列的核心模型',
-    contextWindow: '200K',
-    costLevel: 'medium'
-  },
-  {
-    id: 'anthropic/claude-opus-4',
-    name: 'Claude Opus 4',
-    provider: 'Anthropic',
-    description: '最强大的Claude模型',
-    contextWindow: '200K',
-    costLevel: 'high'
   },
   {
     id: 'openai/gpt-4o',
@@ -156,6 +140,14 @@ export const AI_MODELS: AiModelOption[] = [
     description: 'OpenAI的多模态旗舰模型',
     contextWindow: '128K',
     costLevel: 'medium'
+  },
+  {
+    id: 'deepseek/deepseek-chat',
+    name: 'DeepSeek Chat',
+    provider: 'DeepSeek',
+    description: '国产高性价比模型',
+    contextWindow: '64K',
+    costLevel: 'low'
   },
   {
     id: 'openai/gpt-4-turbo',
@@ -174,13 +166,21 @@ export const AI_MODELS: AiModelOption[] = [
     costLevel: 'medium'
   },
   {
-    id: 'deepseek/deepseek-chat',
-    name: 'DeepSeek Chat',
-    provider: 'DeepSeek',
-    description: '国产高性价比模型',
-    contextWindow: '64K',
+    id: 'anthropic/claude-opus-4',
+    name: 'Claude Opus 4',
+    provider: 'Anthropic',
+    description: '最强大的Claude模型（高成本）',
+    contextWindow: '200K',
+    costLevel: 'high'
+  },
+  {
+    id: 'minimax/minimax-m2',
+    name: 'MiniMax M2',
+    provider: 'MiniMax',
+    description: '中文模型（当前不稳定）',
+    contextWindow: '32K',
     costLevel: 'low'
   }
 ]
 
-export const DEFAULT_AI_MODEL = 'minimax/minimax-m2'
+export const DEFAULT_AI_MODEL = 'anthropic/claude-3.5-sonnet'
