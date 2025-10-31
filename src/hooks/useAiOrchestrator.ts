@@ -101,6 +101,17 @@ export function useAiOrchestrator() {
     (reason: AiDisableReason, error?: unknown) => {
       const detail =
         error instanceof Error ? error.message : typeof error === 'string' ? error : undefined
+
+      // 增强错误日志输出
+      console.error('=== AI 引擎禁用详情 ===')
+      console.error('原因:', reason)
+      console.error('错误对象:', error)
+      console.error('错误详情:', detail)
+      if (error instanceof Error) {
+        console.error('错误堆栈:', error.stack)
+      }
+      console.error('=====================')
+
       if (!aiStatusRef.current.enabled) {
         ensureOfflineNotice(reason, detail)
         return
@@ -828,7 +839,15 @@ export function useAiOrchestrator() {
         }
       },
       onPostVoteDiscussion: async (context: DayContext, round: number): Promise<PostVoteDiscussionEvent[]> => {
-        if (!aiStatusRef.current.enabled || !context.state.voteSummary) {
+        console.log(`[票后分析] 开始第${round}轮，存活玩家数: ${context.alivePlayers.length}`)
+
+        if (!aiStatusRef.current.enabled) {
+          console.log('[票后分析] AI 引擎未启用，使用离线模式')
+          return offlinePostVoteDiscussion(context, round)
+        }
+
+        if (!context.state.voteSummary) {
+          console.error('[票后分析] 错误: voteSummary 为 null')
           return offlinePostVoteDiscussion(context, round)
         }
 
@@ -837,6 +856,7 @@ export function useAiOrchestrator() {
 
         for (let i = 0; i < alivePlayers.length; i++) {
           if (!aiStatusRef.current.enabled) {
+            console.log(`[票后分析] AI 引擎在处理 #${i + 1} 玩家时被禁用`)
             const remaining = alivePlayers.slice(i)
             const offlineEvents = remaining.map(p => ({
               speakerId: p.id,
@@ -849,12 +869,16 @@ export function useAiOrchestrator() {
 
           await waitIfPaused()
           const player = alivePlayers[i]
+          console.log(`[票后分析] 正在处理玩家 #${player.id} ${player.name}`)
+
           const memory = ensureMemory(memoryRef.current, player.id)
           const profile = buildPlayerProfile(context.state, player, memory)
           const prompt = buildPostVoteDiscussionPrompt(profile, context, memory, context.state.voteSummary, events, round)
 
           try {
+            console.log(`[票后分析] 调用 AI: #${player.id} ${player.name}`)
             const response = await invokeAgent(player.id, prompt.stage, prompt.systemPrompt, prompt.userPrompt)
+            console.log(`[票后分析] AI 响应成功: #${player.id} ${player.name}`)
             const speech = response.action.speech?.trim() || '（暂不评价）'
             const wantsContinue = response.action.action?.wantsContinue ?? false
             memory.lastSpeech = speech
@@ -887,11 +911,13 @@ export function useAiOrchestrator() {
               await new Promise(resolve => setTimeout(resolve, 500))
             }
           } catch (error) {
+            console.error(`[票后分析] 玩家 #${player.id} ${player.name} 处理失败:`, error)
             disableAiEngine('request_failed', error)
             return offlinePostVoteDiscussion(context, round)
           }
         }
 
+        console.log(`[票后分析] 第${round}轮完成，共 ${events.length} 条发言`)
         return events
       },
       onPostVoteFollowUp: async (context: DayContext, round: number, allPreviousSpeeches: DiscussionEvent[]): Promise<PostVoteFollowUpEvent[]> => {
