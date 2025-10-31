@@ -55,7 +55,8 @@ function formatSpeeches(previous: DiscussionEvent[], state: GameState) {
 export function buildWerewolfPrompt(
   profile: AiPlayerProfile,
   context: NightContext,
-  memory: AiPlayerMemory
+  memory: AiPlayerMemory,
+  wolfSpeeches?: { playerId: number; playerName: string; speech: string }[]
 ): StagePrompt {
   const emphasisIds = profile.allies.map((ally) => ally.id)
   const allies =
@@ -67,10 +68,17 @@ export function buildWerewolfPrompt(
   const latestHighlight = formatLatestHighlight(context.state)
   const lastAction = memory.lastAction ?? '无记录'
 
+  // 格式化狼人队友的发言
+  const teamChat = wolfSpeeches && wolfSpeeches.length > 0
+    ? '\n狼队频道（队内可见）：\n' + wolfSpeeches
+        .map(s => `  #${s.playerId} ${s.playerName}：${s.speech}`)
+        .join('\n')
+    : ''
+
   const systemPrompt = `阶段：夜晚 · 狼人行动
 你是座位 #${profile.player.id} 的狼人，需要与同伴协同决定击杀目标。${JSON_INSTRUCTION}`
   const userPrompt = `当前夜次：第 ${context.day + 1} 夜
-狼人同伴：${allies}
+狼人同伴：${allies}${teamChat}
 存活玩家：
 ${visibleList}
 上一晚摘要：

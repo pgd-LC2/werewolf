@@ -317,6 +317,7 @@ export function useAiOrchestrator() {
         }
 
         const responses: { player: Player; decision: WerewolfDecision; confidence: number }[] = []
+        const wolfSpeeches: { playerId: number; playerName: string; speech: string }[] = []
 
         for (let i = 0; i < wolves.length; i++) {
           if (!aiStatusRef.current.enabled) break
@@ -324,7 +325,7 @@ export function useAiOrchestrator() {
           const wolf = wolves[i]
           const memory = ensureMemory(memoryRef.current, wolf.id)
           const profile = buildPlayerProfile(context.state, wolf, memory)
-          const prompt = buildWerewolfPrompt(profile, context, memory)
+          const prompt = buildWerewolfPrompt(profile, context, memory, wolfSpeeches)
           try {
             const response = await invokeAgent(wolf.id, prompt.stage, prompt.systemPrompt, prompt.userPrompt)
             const targetId = response.action.action?.targetId ?? null
@@ -332,6 +333,13 @@ export function useAiOrchestrator() {
             memory.lastAction = response.action.plan
             responses.push({ player: wolf, decision, confidence: response.action.confidence })
             const speech = response.action.speech?.trim() || response.action.plan || '（保持沉默）'
+
+            // 记录狼人发言，供后续狼人查看
+            wolfSpeeches.push({
+              playerId: wolf.id,
+              playerName: wolf.name,
+              speech: speech
+            })
 
             // 狼人的发言是给队友的内部讨论，不应该被记录到公开日志
             // 只记录到 replay 中用于复盘
