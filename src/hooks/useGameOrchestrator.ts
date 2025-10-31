@@ -403,12 +403,7 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
   const runPostVoteDiscussionSequence = useCallback(async () => {
     const MAX_ROUNDS = 3
 
-    console.log('[票后分析] 收集投票结果')
-    logic.collectVoteSummary()
-    await waitForTempo()
-    await sleep(0)
-
-    // 在收集 voteSummary 后重新获取 context
+    // voteSummary 已经在外部收集好了，直接获取 context
     const context = getContext()
 
     console.log('[票后分析] 开始第1轮强制发言')
@@ -490,14 +485,16 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
     })
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    console.log('[白天序列] 进入票后分析阶段（会生成 voteSummary）')
-    await runPostVoteDiscussionSequence()
-    await new Promise(resolve => setTimeout(resolve, 500))
+    console.log('[白天序列] 收集投票统计（生成 voteSummary）')
+    logic.collectVoteSummary()
+    await waitForTempo()
 
-    console.log('[白天序列] 结算投票结果（淘汰玩家）')
+    console.log('[白天序列] 结算投票结果（淘汰玩家、公开身份）')
     logic.resolveVoting()
     await waitForTempo()
     await sleep(0)
+
+    // 如果触发了猎人技能，先处理猎人
     if (stateRef.current.phase === 'HunterAction') {
       console.log('[白天序列] 猎人技能触发')
       await runHunterStage()
@@ -505,6 +502,14 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
       await new Promise(resolve => setTimeout(resolve, 500))
     }
     await sleep(0)
+
+    // 如果游戏还在进行（没有结束），进行票后分析
+    if (stateRef.current.phase !== 'GameOver' && stateRef.current.phase !== 'Night') {
+      console.log('[白天序列] 进入票后分析阶段')
+      await runPostVoteDiscussionSequence()
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
     console.log('[白天序列] 完成')
   }, [
     getContext,
