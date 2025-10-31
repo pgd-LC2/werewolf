@@ -20,6 +20,8 @@ interface AiStructuredAction {
   type: string;
   targetId?: number | null;
   notes?: string;
+  wantsContinue?: boolean;
+  hasFollowUp?: boolean;
 }
 
 interface AiAction {
@@ -92,6 +94,63 @@ const AI_ACTION_SCHEMA = {
   additionalProperties: false,
 };
 
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function makeOpenRouterRequest(
+  apiKey: string,
+  requestPayload: Record<string, unknown>,
+  maxRetries = 3
+): Promise<Response> {
+  const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`OpenRouter 请求尝试 ${attempt}/${maxRetries}`);
+
+      const response = await fetch(OPENROUTER_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": "https://werewolf-game.netlify.app",
+          "X-Title": "Werewolf AI Game",
+        },
+        body: JSON.stringify(requestPayload),
+      });
+
+      // 对于 5xx 错误或 429（过多请求），进行重试
+      if (response.status >= 500 || response.status === 429) {
+        const errorText = await response.text();
+        console.warn(`OpenRouter 请求失败 (${response.status}): ${errorText}`);
+
+        if (attempt < maxRetries) {
+          const delayMs = 1000 * attempt; // 递增延迟：1s, 2s, 3s
+          console.log(`${delayMs}ms 后重试...`);
+          await sleep(delayMs);
+          continue;
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`OpenRouter 请求异常 (尝试 ${attempt}/${maxRetries}):`, error);
+
+      if (attempt < maxRetries) {
+        const delayMs = 1000 * attempt;
+        console.log(`${delayMs}ms 后重试...`);
+        await sleep(delayMs);
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error(`OpenRouter 请求失败，已重试 ${maxRetries} 次`);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -102,12 +161,12 @@ Deno.serve(async (req: Request) => {
 
   try {
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
-    
+
     if (!OPENROUTER_API_KEY) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "OpenRouter API key not configured",
-          configured: false 
+          configured: false
         }),
         {
           status: 400,
@@ -121,8 +180,6 @@ Deno.serve(async (req: Request) => {
 
     const requestBody: AiRequestBody = await req.json();
     const { model, messages, temperature = 0.9 } = requestBody;
-
-    const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
     // 检测是否为Claude模型（包括所有Claude变体）
     const isClaudeModel = model.toLowerCase().includes('claude');
@@ -171,23 +228,14 @@ Deno.serve(async (req: Request) => {
       };
     }
 
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://werewolf-game.netlify.app",
-        "X-Title": "Werewolf AI Game",
-      },
-      body: JSON.stringify(requestPayload),
-    });
+    const response = await makeOpenRouterRequest(OPENROUTER_API_KEY, requestPayload);
 
     if (!response.ok) {
       const errorText = await response.text();
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: `OpenRouter request failed: ${response.status} ${response.statusText}`,
-          details: errorText 
+          details: errorText
         }),
         {
           status: response.status,
