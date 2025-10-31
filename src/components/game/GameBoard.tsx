@@ -163,11 +163,18 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
       : aiAction?.confidence != null
         ? `${Math.round(aiAction.confidence * 100)}%`
         : agentState?.loading
-          ? '思考中'
+          ? agentState?.retryCount && agentState.retryCount > 0
+            ? `重试中 (${agentState.retryCount}/3)`
+            : '思考中'
           : '无'
     const speechText = offline
       ? 'AI 离线，使用默认策略推演。'
-      : aiAction?.speech?.trim() || (agentState?.loading ? '生成中…' : '暂无发言')
+      : aiAction?.speech?.trim() ||
+        (agentState?.loading
+          ? agentState?.retryCount && agentState.retryCount > 0
+            ? `正在重试 AI 请求（第 ${agentState.retryCount} 次）...`
+            : '生成中…'
+          : '暂无发言')
     const planText = offline ? '默认策略' : aiAction?.plan || '未提供计划'
     const actionText = offline
       ? '默认策略'
