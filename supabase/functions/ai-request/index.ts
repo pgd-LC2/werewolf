@@ -124,6 +124,40 @@ Deno.serve(async (req: Request) => {
 
     const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+    // 检测是否为Claude模型（包括所有Claude变体）
+    const isClaudeModel = model.toLowerCase().includes('claude');
+    const isAnthropicProvider = model.toLowerCase().startsWith('anthropic/');
+
+    // 为Claude模型构建请求体
+    const requestPayload: Record<string, unknown> = {
+      model,
+      temperature,
+      messages,
+    };
+
+    // Claude模型需要使用结构化输出参数
+    if (isClaudeModel || isAnthropicProvider) {
+      console.log(`Detected Claude model: ${model}, using structured outputs`);
+      requestPayload.response_format = {
+        type: "json_schema",
+        json_schema: {
+          name: "ai_action_schema",
+          strict: true,
+          schema: AI_ACTION_SCHEMA,
+        },
+      };
+    } else {
+      // 非Claude模型使用标准JSON模式
+      requestPayload.response_format = {
+        type: "json_schema",
+        json_schema: {
+          name: "ai_action_schema",
+          strict: true,
+          schema: AI_ACTION_SCHEMA,
+        },
+      };
+    }
+
     const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
@@ -132,19 +166,7 @@ Deno.serve(async (req: Request) => {
         "HTTP-Referer": "https://werewolf-game.netlify.app",
         "X-Title": "Werewolf AI Game",
       },
-      body: JSON.stringify({
-        model,
-        temperature,
-        messages,
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "ai_action_schema",
-            strict: true,
-            schema: AI_ACTION_SCHEMA,
-          },
-        },
-      }),
+      body: JSON.stringify(requestPayload),
     });
 
     if (!response.ok) {
