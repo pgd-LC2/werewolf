@@ -150,6 +150,14 @@ export const AI_MODELS: AiModelOption[] = [
     costLevel: 'low'
   },
   {
+    id: 'deepseek/deepseek-v3.2-exp',
+    name: 'DeepSeek V3.2 Exp',
+    provider: 'DeepSeek',
+    description: '实验版本，更强推理能力',
+    contextWindow: '64K',
+    costLevel: 'low'
+  },
+  {
     id: 'openai/gpt-4-turbo',
     name: 'GPT-4 Turbo',
     provider: 'OpenAI',
