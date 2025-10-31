@@ -487,13 +487,14 @@ export function useGameOrchestrator(customHandlers?: Partial<OrchestratorHandler
     })
     await new Promise(resolve => setTimeout(resolve, 500))
 
+    console.log('[白天序列] 结算投票结果（生成 voteSummary）')
+    logic.resolveVoting()
+    await waitForTempo()
+    await sleep(0)
+
     console.log('[白天序列] 进入票后分析阶段')
     await runPostVoteDiscussionSequence()
     await new Promise(resolve => setTimeout(resolve, 500))
-
-    console.log('[白天序列] 结算投票结果')
-    logic.resolveVoting()
-    await waitForTempo()
     await sleep(0)
     if (stateRef.current.phase === 'HunterAction') {
       console.log('[白天序列] 猎人技能触发')
