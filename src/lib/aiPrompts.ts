@@ -206,7 +206,8 @@ ${latestHighlight}
 export function buildVotingPrompt(
   profile: AiPlayerProfile,
   context: DayContext,
-  memory: AiPlayerMemory
+  memory: AiPlayerMemory,
+  discussionSpeeches: DiscussionEvent[]
 ): StagePrompt {
   const visibleList = context.alivePlayers.map((player) => formatPlayerLine(player, false)).join('\n')
   const known = formatKnownRoles(memory)
@@ -214,6 +215,7 @@ export function buildVotingPrompt(
   const lastAction = memory.lastAction ?? '无记录'
   const recent = formatRecentLog(context.state.gameLog)
   const latestHighlight = formatLatestHighlight(context.state)
+  const speeches = formatSpeeches(discussionSpeeches, context.state)
 
   const systemPrompt = `阶段：白天 · 投票放逐
 你是座位 #${profile.player.id} 的 ${profile.player.role}，需要投票选出放逐对象。${JSON_INSTRUCTION}`
@@ -222,13 +224,18 @@ export function buildVotingPrompt(
 ${visibleList}
 已确认身份：
 ${known}
-最近一次发言：${lastSpeech}
+
+【今日讨论发言】
+${speeches}
+
+你的发言：${lastSpeech}
 内部备忘：${lastAction}
 最近日志：
 ${recent}
 昨夜信息：
 ${latestHighlight}
-请在 action.type 中返回 "vote"，并在 targetId 指定希望放逐的座位号；若弃权请填 null。`
+
+根据以上讨论内容和推理，请在 action.type 中返回 "vote"，并在 targetId 指定希望放逐的座位号；若弃权请填 null。`
 
   return {
     stage: 'day-voting',

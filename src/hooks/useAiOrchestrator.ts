@@ -70,6 +70,7 @@ export function useAiOrchestrator() {
   const lastWolfTargetRef = useRef<number | null>(null)
   const offlineNoticeRef = useRef(false)
   const pausedRef = useRef(false)
+  const currentDaySpeeches = useRef<DiscussionEvent[]>([])
 
   const initialStatus: AiEngineStatus = IS_OPENROUTER_CONFIGURED
     ? { enabled: true }
@@ -623,10 +624,13 @@ export function useAiOrchestrator() {
       },
       onDayStart: async () => {
         lastSeerTargetRef.current = null
+        currentDaySpeeches.current = []
       },
       onDiscussion: async (context: DayContext): Promise<DiscussionEvent[]> => {
         if (!aiStatusRef.current.enabled) {
-          return offlineDiscussion(context)
+          const result = offlineDiscussion(context)
+          currentDaySpeeches.current = result
+          return result
         }
 
         const speeches: DiscussionEvent[] = []
@@ -634,7 +638,9 @@ export function useAiOrchestrator() {
         const alivePlayers = context.alivePlayers
         for (let i = 0; i < alivePlayers.length; i++) {
           if (!aiStatusRef.current.enabled) {
-            return offlineDiscussion(context, speeches)
+            const result = offlineDiscussion(context, speeches)
+            currentDaySpeeches.current = result
+            return result
           }
 
           await waitIfPaused()
@@ -676,10 +682,13 @@ export function useAiOrchestrator() {
             }
           } catch (error) {
             disableAiEngine('request_failed', error)
-            return offlineDiscussion(context, speeches)
+            const result = offlineDiscussion(context, speeches)
+            currentDaySpeeches.current = result
+            return result
           }
         }
 
+        currentDaySpeeches.current = speeches
         return speeches
       },
       onVoting: async (context: DayContext): Promise<VotingDecision> => {
@@ -688,6 +697,7 @@ export function useAiOrchestrator() {
         }
 
         const votes: VotingDecision['votes'] = []
+        const discussionSpeeches = currentDaySpeeches.current
 
         const alivePlayers = context.alivePlayers
         for (let i = 0; i < alivePlayers.length; i++) {
@@ -699,7 +709,7 @@ export function useAiOrchestrator() {
           const player = alivePlayers[i]
           const memory = ensureMemory(memoryRef.current, player.id)
           const profile = buildPlayerProfile(context.state, player, memory)
-          const prompt = buildVotingPrompt(profile, context, memory)
+          const prompt = buildVotingPrompt(profile, context, memory, discussionSpeeches)
 
           try {
             const response = await invokeAgent(player.id, prompt.stage, prompt.systemPrompt, prompt.userPrompt)
