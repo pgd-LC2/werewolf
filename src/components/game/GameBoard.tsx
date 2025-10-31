@@ -102,6 +102,7 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
   }
 
   const handleOneClickStart = () => {
+    console.log(`[GameBoard] 开始游戏，使用AI模型: ${selectedModel}`)
     prepareNewGame()
     resume()
     setAutoRunning(true)

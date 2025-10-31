@@ -47,8 +47,14 @@ export function useAiAgents() {
             content: input
           }
           const requestMessages = [...history, userMessage]
+          const modelToUse = options?.model ?? selectedModel
+
+          if (attempt === 1) {
+            console.log(`[AI Agent] #${playerId} 使用模型: ${modelToUse}`)
+          }
+
           const response = await requestAiAction({
-            model: options?.model ?? selectedModel,
+            model: modelToUse,
             messages: requestMessages
           })
           aiContextManager.append(playerId, [
@@ -96,7 +102,7 @@ export function useAiAgents() {
       setAgentState(playerId, { loading: false, error: message, retryCount: 0 })
       throw lastError ?? new Error('AI 请求失败')
     },
-    [setAgentState]
+    [setAgentState, selectedModel]
   )
 
   const resetAgent = useCallback(
