@@ -182,6 +182,14 @@ export const AI_MODELS: AiModelOption[] = [
     costLevel: 'high'
   },
   {
+    id: 'x-ai/grok-4',
+    name: 'Grok 4',
+    provider: 'xAI',
+    description: 'xAI的最新旗舰模型',
+    contextWindow: '128K',
+    costLevel: 'high'
+  },
+  {
     id: 'anthropic/claude-opus-4',
     name: 'Claude Opus 4',
     provider: 'Anthropic',
