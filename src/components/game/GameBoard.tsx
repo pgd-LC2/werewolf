@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PauseCircle, PlayCircle, Zap, X } from 'lucide-react'
+import { PauseCircle, PlayCircle, Zap, X, Download, Upload, CheckCircle, XCircle } from 'lucide-react'
 import { useAiOrchestrator } from '../../hooks/useAiOrchestrator'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
 import { AI_MODELS } from '../../lib/constants'
+import { exportGameAsJSON, downloadJSON, uploadGameToDatabase } from '../../lib/gameExport'
 
 const DEFAULT_NAMES = ['月影', '霜狐', '长夜', '林风', '墨砚', '晨曦', '远山', '流萤', '青禾', '星潮']
 
@@ -52,6 +53,8 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
   const [namesInput, setNamesInput] = useState(initialNames.join('\n'))
   const [showThinking, setShowThinking] = useState(false)
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
+  const [uploadMessage, setUploadMessage] = useState('')
 
   const players = state.players
   const alivePlayers = players.filter((player) => player.isAlive)
@@ -118,6 +121,38 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
       resume()
     } else {
       pause()
+    }
+  }
+
+  const handleExportJSON = () => {
+    const jsonData = exportGameAsJSON(state, selectedModel)
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+    const filename = `werewolf-game-${timestamp}.json`
+    downloadJSON(jsonData, filename)
+  }
+
+  const handleUploadToDatabase = async () => {
+    if (uploadStatus === 'uploading') return
+
+    setUploadStatus('uploading')
+    setUploadMessage('正在上传到数据库...')
+
+    const result = await uploadGameToDatabase(state, selectedModel)
+
+    if (result.success) {
+      setUploadStatus('success')
+      setUploadMessage(`上传成功！游戏ID: ${result.gameId}`)
+      setTimeout(() => {
+        setUploadStatus('idle')
+        setUploadMessage('')
+      }, 5000)
+    } else {
+      setUploadStatus('error')
+      setUploadMessage(`上传失败: ${result.error}`)
+      setTimeout(() => {
+        setUploadStatus('idle')
+        setUploadMessage('')
+      }, 5000)
     }
   }
 
@@ -271,11 +306,60 @@ export function GameBoard({ initialNames = DEFAULT_NAMES }: { initialNames?: str
               {paused ? <PlayCircle className='mr-2 h-4 w-4' /> : <PauseCircle className='mr-2 h-4 w-4' />}
               {paused ? '继续' : '暂停'}
             </Button>
+            <Button
+              variant='ghost'
+              onClick={handleExportJSON}
+              disabled={state.phase === 'RoleAssignment'}
+              className='text-xs uppercase tracking-[0.3em]'
+            >
+              <Download className='mr-2 h-4 w-4' />
+              导出JSON
+            </Button>
+            <Button
+              variant='ghost'
+              onClick={handleUploadToDatabase}
+              disabled={state.phase === 'RoleAssignment' || uploadStatus === 'uploading'}
+              className='text-xs uppercase tracking-[0.3em]'
+            >
+              {uploadStatus === 'uploading' ? (
+                <>
+                  <Upload className='mr-2 h-4 w-4 animate-pulse' />
+                  上传中...
+                </>
+              ) : uploadStatus === 'success' ? (
+                <>
+                  <CheckCircle className='mr-2 h-4 w-4' />
+                  已上传
+                </>
+              ) : uploadStatus === 'error' ? (
+                <>
+                  <XCircle className='mr-2 h-4 w-4' />
+                  上传失败
+                </>
+              ) : (
+                <>
+                  <Upload className='mr-2 h-4 w-4' />
+                  上传数据库
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
         <div className='flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-300'>
           <span>当前模式：{autoStatus}</span>
+          {uploadMessage && (
+            <span
+              className={cn(
+                'rounded-full px-3 py-1',
+                uploadStatus === 'success' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                uploadStatus === 'error' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+                uploadStatus === 'uploading' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+              )}
+            >
+              {uploadMessage}
+            </span>
+          )}
         </div>
       </header>
 
