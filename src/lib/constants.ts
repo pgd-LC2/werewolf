@@ -174,6 +174,14 @@ export const AI_MODELS: AiModelOption[] = [
     costLevel: 'medium'
   },
   {
+    id: 'google/gemini-2.5-pro',
+    name: 'Gemini 2.5 Pro',
+    provider: 'Google',
+    description: 'Google最新一代旗舰模型',
+    contextWindow: '2M',
+    costLevel: 'high'
+  },
+  {
     id: 'anthropic/claude-opus-4',
     name: 'Claude Opus 4',
     provider: 'Anthropic',
