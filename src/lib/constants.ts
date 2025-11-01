@@ -134,14 +134,6 @@ export const AI_MODELS: AiModelOption[] = [
     costLevel: 'medium'
   },
   {
-    id: 'openai/gpt-4o',
-    name: 'GPT-4o',
-    provider: 'OpenAI',
-    description: 'OpenAI的多模态旗舰模型',
-    contextWindow: '128K',
-    costLevel: 'medium'
-  },
-  {
     id: 'deepseek/deepseek-chat',
     name: 'DeepSeek Chat',
     provider: 'DeepSeek',
@@ -156,14 +148,6 @@ export const AI_MODELS: AiModelOption[] = [
     description: '实验版本，更强推理能力',
     contextWindow: '64K',
     costLevel: 'low'
-  },
-  {
-    id: 'openai/gpt-4-turbo',
-    name: 'GPT-4 Turbo',
-    provider: 'OpenAI',
-    description: '更快速的GPT-4版本',
-    contextWindow: '128K',
-    costLevel: 'medium'
   },
   {
     id: 'google/gemini-pro-1.5',
@@ -187,14 +171,6 @@ export const AI_MODELS: AiModelOption[] = [
     provider: 'xAI',
     description: 'xAI的最新旗舰模型',
     contextWindow: '128K',
-    costLevel: 'high'
-  },
-  {
-    id: 'anthropic/claude-opus-4',
-    name: 'Claude Opus 4',
-    provider: 'Anthropic',
-    description: '最强大的Claude模型（高成本）',
-    contextWindow: '200K',
     costLevel: 'high'
   },
   {
