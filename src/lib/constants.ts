@@ -150,6 +150,22 @@ export const AI_MODELS: AiModelOption[] = [
     costLevel: 'low'
   },
   {
+    id: 'deepseek/deepseek-r1-0528',
+    name: 'DeepSeek R1',
+    provider: 'DeepSeek',
+    description: '推理专用模型',
+    contextWindow: '64K',
+    costLevel: 'low'
+  },
+  {
+    id: 'deepseek/deepseek-chat-v3-0324',
+    name: 'DeepSeek Chat V3',
+    provider: 'DeepSeek',
+    description: 'V3版本对话模型',
+    contextWindow: '64K',
+    costLevel: 'low'
+  },
+  {
     id: 'google/gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     provider: 'Google',
