@@ -150,14 +150,6 @@ export const AI_MODELS: AiModelOption[] = [
     costLevel: 'low'
   },
   {
-    id: 'google/gemini-pro-1.5',
-    name: 'Gemini Pro 1.5',
-    provider: 'Google',
-    description: 'Google的先进AI模型',
-    contextWindow: '2M',
-    costLevel: 'medium'
-  },
-  {
     id: 'google/gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     provider: 'Google',
